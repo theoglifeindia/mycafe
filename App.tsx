@@ -99,15 +99,24 @@ const App: React.FC = () => {
 
   const handleOrderComplete = useCallback(async (order: Order, tableId: string) => {
     try {
+      setOrders(prev => {
+        const idx = prev.findIndex(o => o.id === order.id);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = order;
+          return updated;
+        }
+        return [order, ...prev];
+      });
       await db.createOrder(order);
     } catch (err) {
       console.error("Order completion failed:", err);
-      alert("Database Error: Could not save order.");
     }
   }, []);
 
   const handleTableUpdate = useCallback(async (tableId: string, updates: Partial<Table>) => {
     try {
+      setTables(prev => prev.map(t => t.id === tableId ? { ...t, ...updates } : t));
       await db.updateTable(tableId, updates);
     } catch (err) {
       console.error("Table update failed:", err);

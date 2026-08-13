@@ -263,84 +263,8 @@ const DineIn: React.FC<DineInProps> = ({
     // Update order status and table status to 'billed'
     handlePlaceOrder('billed');
 
-    // Display the in-app Bill Receipt preview modal
+    // Display the in-app Bill Receipt preview modal only
     setIsBillReceiptModalOpen(true);
-
-    // Try popup window print as secondary enhancement
-    try {
-      const printWindow = window.open('', '_blank', 'width=380,height=600');
-      if (printWindow) {
-        const { subtotal, total } = calculateTotal();
-        const dateStr = new Date().toLocaleString();
-        const billId = selectedTable.currentOrderId || `#${Math.floor(Math.random() * 10000)}`;
-        const custName = selectedTable.customerName || custNameInput.trim();
-        const custPhone = selectedTable.customerPhone || custPhoneInput.trim();
-
-        const itemsHtml = cart.map(item => `
-          <tr>
-            <td style="text-align: left; padding: 4px 0;">${item.name} x ${item.qty}</td>
-            <td style="text-align: right; padding: 4px 0;">₹${(item.price * item.qty).toFixed(2)}</td>
-          </tr>
-        `).join('');
-
-        const logoHtml = settings.showLogoOnBill && settings.logoUrl ? `<img src="${settings.logoUrl}" style="max-height: 70px; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto;" />` : '';
-        const addressHtml = settings.showAddressOnBill ? `<div style="font-size: 11px; margin-bottom: 5px; text-align: center;">${profile.address}</div>` : '';
-
-        const headerLinesHtml = (settings.headerLines || []).map(line => `
-          <div style="font-size: ${line.size}px; font-weight: ${line.bold ? 'bold' : 'normal'}; text-align: ${line.align}; width: 100%; margin-bottom: 2px;">
-            ${line.text}
-          </div>
-        `).join('');
-
-        const footerLinesHtml = (settings.footerLines || []).map(line => `
-          <div style="font-size: ${line.size}px; font-weight: ${line.bold ? 'bold' : 'normal'}; text-align: ${line.align}; width: 100%; margin-top: 2px;">
-            ${line.text}
-          </div>
-        `).join('');
-
-        const bodyFontSize = settings.bodyFontSize || 12;
-
-        printWindow.document.write(`
-          <html>
-            <head>
-              <style>
-                @page { margin: 0; }
-                body { font-family: 'Courier New', monospace; width: 80mm; padding: 5mm; margin: 0; font-size: ${bodyFontSize}px; color: #000; }
-                .center { text-align: center; }
-                .divider { border-top: 1px dashed #000; margin: 10px 0; }
-                table { width: 100%; border-collapse: collapse; font-size: ${bodyFontSize}px; }
-              </style>
-            </head>
-            <body onload="window.print(); window.close();">
-              <div class="center">
-                ${logoHtml}
-                ${headerLinesHtml}
-                ${addressHtml}
-              </div>
-              <div class="divider"></div>
-              <div>Bill No: ${billId} | Table: ${selectedTable.name}</div>
-              <div>Date: ${dateStr}</div>
-              ${custName ? `<div>Customer: ${custName}</div>` : ''}
-              ${custPhone ? `<div>Mobile: ${custPhone}</div>` : ''}
-              <div class="divider"></div>
-              <table>${itemsHtml}</table>
-              <div class="divider"></div>
-              <div style="display: flex; justify-content: space-between;"><span>Subtotal:</span><span>₹${subtotal.toFixed(2)}</span></div>
-              <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: ${bodyFontSize + 2}px; margin-top: 5px;">
-                <span>TOTAL:</span><span>₹${total.toFixed(2)}</span>
-              </div>
-              <div class="divider"></div>
-              <div class="center">
-                ${footerLinesHtml}
-              </div>
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-      }
-    } catch (e) {
-      console.log('Popup window blocked; displaying in-app printable modal instead.');
-    }
   };
 
   const handleSettle = () => {
@@ -360,7 +284,7 @@ const DineIn: React.FC<DineInProps> = ({
   const handlePrintClick = () => {
     if (!selectedTable) return;
     if (cart.length === 0) {
-      alert('Cart is empty. Please select menu items to punch or print bill.');
+      alert('Cart is empty. Please select menu items to print bill.');
       return;
     }
     if (selectedTable.customerName || selectedTable.customerPhone) {
@@ -406,10 +330,15 @@ const DineIn: React.FC<DineInProps> = ({
     setCustError('');
     setIsCustModalOpen(false);
 
-    const name = custNameInput.trim();
-    const phone = custPhoneInput.trim();
+    let name = custNameInput.trim();
+    let phone = custPhoneInput.trim();
 
-    if (!skip && (name || phone)) {
+    if (skip) {
+      name = '';
+      phone = '';
+      setCustNameInput('');
+      setCustPhoneInput('');
+    } else if (name || phone) {
       const { total } = calculateTotal();
       if (selectedTable) {
         onTableUpdate(selectedTable.id, { customerName: name, customerPhone: phone });
@@ -433,6 +362,10 @@ const DineIn: React.FC<DineInProps> = ({
   };
 
   const handleExitAttempt = () => {
+    setIsCustModalOpen(false);
+    setIsBillReceiptModalOpen(false);
+    setIsSettleModalOpen(false);
+    setCustTarget(null);
     if (isDirty && cart.length > 0) {
       setIsExitGuardOpen(true);
     } else {
@@ -830,6 +763,10 @@ const DineIn: React.FC<DineInProps> = ({
                   <button 
                     onClick={() => {
                       setIsExitGuardOpen(false);
+                      setIsCustModalOpen(false);
+                      setIsBillReceiptModalOpen(false);
+                      setIsSettleModalOpen(false);
+                      setCustTarget(null);
                       setIsDirty(false);
                       setSelectedTableId(null);
                       setSessionStartTime(null);
@@ -841,6 +778,206 @@ const DineIn: React.FC<DineInProps> = ({
                     Exit Anyway
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Customer Information Prompt Modal */}
+        {isCustModalOpen && (
+          <div className="fixed inset-0 bg-black/60 z-[650] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+              <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
+                <div>
+                  <h3 className="text-base font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+                    <UserCheck className="w-5 h-5 text-blue-600" /> Customer Details
+                  </h3>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
+                    Table {selectedTable?.name || 'Selected'}
+                  </p>
+                </div>
+                <button onClick={() => saveCustomerAndProceed(true)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                {custError && (
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    <span>{custError}</span>
+                  </div>
+                )}
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">
+                    Customer Name
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      placeholder="Enter customer name"
+                      value={custNameInput}
+                      onChange={e => {
+                        setCustNameInput(e.target.value);
+                        if (custError) setCustError('');
+                      }}
+                      className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">
+                    Mobile Number (10 Digits)
+                  </label>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      placeholder="Enter 10-digit mobile number"
+                      value={custPhoneInput}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setCustPhoneInput(val);
+                        if (custError) setCustError('');
+                      }}
+                      className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => saveCustomerAndProceed(true)}
+                    className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+                  >
+                    Skip
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => saveCustomerAndProceed(false)}
+                    className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md active:scale-95"
+                  >
+                    Save & Proceed
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bill Receipt Preview Modal */}
+        {isBillReceiptModalOpen && selectedTable && (
+          <div className="fixed inset-0 bg-black/60 z-[700] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col max-h-[90vh]">
+              <div className="p-4 border-b bg-gray-50 flex justify-between items-center flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <Printer className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Bill Generated</h3>
+                </div>
+                <button 
+                  onClick={() => setIsBillReceiptModalOpen(false)} 
+                  className="p-1.5 hover:bg-gray-200 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div id="printable-bill-content-active" className="p-6 overflow-y-auto font-mono text-xs text-gray-800 space-y-3 bg-white">
+                <div className="text-center space-y-1 border-b pb-3 border-dashed border-gray-300">
+                  {settings.showLogoOnBill && settings.logoUrl && (
+                    <img src={settings.logoUrl} alt="Logo" className="h-12 object-contain mx-auto mb-2" />
+                  )}
+                  <h4 className="font-bold text-sm text-black">{settings.businessName || profile.ownerName || 'POS System'}</h4>
+                  {settings.showAddressOnBill && profile.address && (
+                    <p className="text-[11px] text-gray-600 leading-tight">{profile.address}</p>
+                  )}
+                  {profile.fssai && (
+                    <p className="text-[10px] text-gray-500">FSSAI: {profile.fssai}</p>
+                  )}
+                </div>
+
+                <div className="text-[11px] space-y-0.5 border-b pb-2 border-dashed border-gray-300">
+                  <div className="flex justify-between">
+                    <span>Bill No: {selectedTable.currentOrderId || `#${Math.floor(Math.random() * 10000)}`}</span>
+                    <span>Table: {selectedTable.name}</span>
+                  </div>
+                  <div>Date: {new Date().toLocaleString()}</div>
+                  {(selectedTable.customerName || custNameInput) && (
+                    <div className="font-semibold text-black">Customer: {selectedTable.customerName || custNameInput}</div>
+                  )}
+                  {(selectedTable.customerPhone || custPhoneInput) && (
+                    <div className="text-gray-600">Mobile: {selectedTable.customerPhone || custPhoneInput}</div>
+                  )}
+                </div>
+
+                <table className="w-full text-left text-[11px] border-b pb-2 border-dashed border-gray-300">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-gray-500">
+                      <th className="py-1">Item</th>
+                      <th className="py-1 text-center">Qty</th>
+                      <th className="py-1 text-right">Amt (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.map(item => (
+                      <tr key={item.id} className="border-b border-gray-100">
+                        <td className="py-1 pr-1 font-sans font-medium">{item.name}</td>
+                        <td className="py-1 text-center font-bold">{item.qty}</td>
+                        <td className="py-1 text-right font-bold">{(item.price * item.qty).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="space-y-1 text-[11px] pt-1">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Subtotal:</span>
+                    <span>₹{calculateTotal().subtotal.toFixed(2)}</span>
+                  </div>
+                  {calculateTotal().discount > 0 && (
+                    <div className="flex justify-between text-red-600">
+                      <span>Discount:</span>
+                      <span>-₹{calculateTotal().discount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm font-black text-black pt-1 border-t border-dashed border-gray-400">
+                    <span>TOTAL PAYABLE:</span>
+                    <span>₹{calculateTotal().total.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="text-center pt-3 border-t border-dashed border-gray-300 text-[10px] text-gray-500">
+                  <p className="font-bold">Thank you for dining with us!</p>
+                  <p>Please visit again</p>
+                </div>
+              </div>
+
+              <div className="p-4 border-t bg-gray-50 flex gap-3 flex-shrink-0">
+                <button
+                  onClick={() => setIsBillReceiptModalOpen(false)}
+                  className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    const content = document.getElementById('printable-bill-content-active')?.innerHTML;
+                    if (!content) return;
+                    const printWin = window.open('', '_blank', 'width=380,height=600');
+                    if (printWin) {
+                      printWin.document.write(`<html><head><title>Print Bill</title><style>body{font-family:monospace;padding:15px;margin:0;}</style></head><body onload="window.print();window.close();">${content}</body></html>`);
+                      printWin.document.close();
+                    } else {
+                      window.print();
+                    }
+                  }}
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-2"
+                >
+                  <Printer className="w-4 h-4" /> Print Receipt
+                </button>
               </div>
             </div>
           </div>

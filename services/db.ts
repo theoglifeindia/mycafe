@@ -96,7 +96,7 @@ class FirestoreService {
         processedUpdates[key] = deleteField();
       }
     });
-    await updateDoc(doc(firestore, 'tables', id), cleanData(processedUpdates));
+    await setDoc(doc(firestore, 'tables', id), cleanData(processedUpdates), { merge: true });
   }
 
   async deleteTable(id: string) {

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, UtensilsCrossed, BookOpen, Settings2, History, PieChart, Store, User, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, BookOpen, Settings2, History, PieChart, Store, User, HelpCircle, LogOut } from 'lucide-react';
 import { AppSettings, BusinessProfile } from '../types.ts';
 
 interface SidebarProps {
@@ -9,6 +9,7 @@ interface SidebarProps {
   settings: AppSettings;
   profile?: BusinessProfile;
   activeTableName?: string;
+  onLogout?: () => void;
 }
 
 const navItems = [
@@ -23,7 +24,7 @@ const navItems = [
   { id: 'help', label: 'Help', icon: HelpCircle },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, profile, activeTableName }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, profile, activeTableName, onLogout }) => {
   const isDark = settings.theme === 'Midnight';
   const bName = settings.businessName || profile?.ownerName || settings.invoiceHeader || 'Cafe Rock Bottom';
   const logoUrl = settings.logoUrl;
@@ -82,16 +83,30 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, pr
         ))}
       </nav>
 
-      <div className={`p-4 mt-auto border-t ${isDark ? 'border-slate-800' : 'border-gray-100'}`}>
-        <div className={`p-3 rounded-xl flex items-center space-x-3 ${isDark ? 'bg-slate-800/50' : 'bg-blue-50'}`}>
-          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+      <div className={`p-3.5 mt-auto border-t flex items-center justify-between gap-2 ${isDark ? 'border-slate-800' : 'border-gray-100'}`}>
+        <div className={`p-2.5 rounded-xl flex items-center space-x-2.5 flex-1 overflow-hidden ${isDark ? 'bg-slate-800/50' : 'bg-blue-50'}`}>
+          <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-black flex-shrink-0">
             AD
           </div>
-          <div>
-            <p className={`text-xs font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Admin Mode</p>
-            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-tighter">Terminal #01</p>
+          <div className="truncate">
+            <p className={`text-xs font-black truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>Admin</p>
+            <p className="text-[9px] text-blue-500 font-black uppercase tracking-tighter">Terminal #01</p>
           </div>
         </div>
+
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            title="Sign Out / Logout"
+            className={`p-2.5 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+              isDark 
+                ? 'bg-rose-950/40 border-rose-800/60 text-rose-400 hover:bg-rose-900/60 hover:text-rose-200' 
+                : 'bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100 hover:text-rose-700'
+            }`}
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );

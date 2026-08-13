@@ -10,10 +10,11 @@ import Settings from './components/Settings.tsx';
 import OrderHistory from './components/OrderHistory.tsx';
 import Reports from './components/Reports.tsx';
 import Help from './components/Help.tsx';
+import Login from './components/Login.tsx';
 import { db } from './services/db.ts';
 import { MenuItem, Table, Order, BusinessProfile, AppSettings } from './types.ts';
 import { INITIAL_SETTINGS } from './constants.tsx';
-import { Clock, Calendar, Bell, User as UserIcon, CheckCircle2, AlertTriangle, PieChart as PieChartIcon, Loader2, Tag, Sparkles } from 'lucide-react';
+import { Clock, Calendar, Bell, User as UserIcon, CheckCircle2, AlertTriangle, PieChart as PieChartIcon, Loader2, Tag, Sparkles, LogOut } from 'lucide-react';
 
 const OFFERS = [
   "🎉 Happy Hour Special: 20% OFF on all Coffee & Beverages from 4 PM to 7 PM!",
@@ -23,6 +24,9 @@ const OFFERS = [
 ];
 
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('pos_auth_user') === 'true';
+  });
   const [activeTab, setActiveTab] = useState('dashboard');
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
@@ -34,6 +38,33 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [dbStatus, setDbStatus] = useState<'testing' | 'connected' | 'error'>('testing');
   const [offerIndex, setOfferIndex] = useState(0);
+
+  const handleLogin = useCallback((u: string, p: string) => {
+    if (u === 'admin' && p === 'admin') {
+      localStorage.setItem('pos_auth_user', 'true');
+      setIsAuthenticated(true);
+      window.history.pushState({ auth: true }, '', window.location.pathname);
+      return true;
+    }
+    return false;
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('pos_auth_user');
+    setIsAuthenticated(false);
+    window.history.replaceState({ auth: false }, '', window.location.pathname);
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (localStorage.getItem('pos_auth_user') !== 'true') {
+        setIsAuthenticated(false);
+        window.history.replaceState({ auth: false }, '', window.location.pathname);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -187,6 +218,10 @@ const App: React.FC = () => {
     );
   }
 
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} settings={settings} profile={profile || undefined} />;
+  }
+
   const getThemeClass = () => {
     switch (settings.theme) {
       case 'Midnight': return 'bg-slate-950 text-slate-100';
@@ -212,6 +247,7 @@ const App: React.FC = () => {
         settings={settings} 
         profile={profile || undefined} 
         activeTableName={activeTableName}
+        onLogout={handleLogout}
       />
       
       <main className="flex-1 ml-64 p-8 relative">
@@ -314,6 +350,16 @@ const App: React.FC = () => {
                 }`}
               >
                 <UserIcon className="w-4 h-4" />
+              </button>
+
+              <button 
+                onClick={handleLogout}
+                title="Sign Out / Logout"
+                className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                  isDark ? 'bg-rose-950/40 border-rose-800 text-rose-400 hover:bg-rose-900/60' : 'bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100'
+                }`}
+              >
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           </div>

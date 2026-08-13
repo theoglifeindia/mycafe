@@ -1,12 +1,14 @@
 
 import React from 'react';
 import { LayoutDashboard, UtensilsCrossed, BookOpen, Settings2, History, PieChart, Store, User, HelpCircle } from 'lucide-react';
-import { AppSettings } from '../types.ts';
+import { AppSettings, BusinessProfile } from '../types.ts';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   settings: AppSettings;
+  profile?: BusinessProfile;
+  activeTableName?: string;
 }
 
 const navItems = [
@@ -21,33 +23,47 @@ const navItems = [
   { id: 'help', label: 'Help', icon: HelpCircle },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, profile, activeTableName }) => {
   const isDark = settings.theme === 'Midnight';
-  const bName = settings.businessName || settings.invoiceHeader || 'Cafe Rock Bottom';
-  
+  const bName = settings.businessName || profile?.ownerName || settings.invoiceHeader || 'Cafe Rock Bottom';
+  const logoUrl = settings.logoUrl;
+
   return (
-    <div className={`w-64 h-screen border-r flex flex-col fixed left-0 top-0 transition-colors duration-300 ${
+    <div className={`w-64 h-screen border-r flex flex-col fixed left-0 top-0 transition-colors duration-300 z-50 ${
       isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
     }`}>
-      <div className="p-6 flex items-center space-x-3">
-        {settings.logoUrl ? (
-          <img src={settings.logoUrl} alt="Logo" className="w-10 h-10 object-contain rounded-lg shadow-sm" />
-        ) : (
-          <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md">
-            {bName.charAt(0) || 'R'}
-          </div>
-        )}
-        <div>
-          <h1 className={`text-sm font-bold leading-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>
+      {/* Top Header: Logo (fit 100% width) & Business Name below logo */}
+      <div className="p-4 flex flex-col items-center text-center space-y-3">
+        <div className="w-full bg-slate-50 border border-gray-100 rounded-2xl p-2.5 flex items-center justify-center overflow-hidden shadow-sm">
+          {logoUrl ? (
+            <img 
+              src={logoUrl} 
+              alt="Logo" 
+              className="w-full h-auto max-h-32 object-contain block mx-auto rounded-xl" 
+            />
+          ) : (
+            <div className="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-md my-1">
+              {bName.charAt(0) || 'R'}
+            </div>
+          )}
+        </div>
+        <div className="w-full text-center space-y-0.5 px-1">
+          <h1 className={`text-base font-black leading-tight tracking-tight break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>
             {bName}
           </h1>
-          <p className={`text-[10px] uppercase tracking-widest font-semibold ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-            POS System
+          <p className={`text-[10px] uppercase tracking-widest font-extrabold ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+            POS SYSTEM
           </p>
+          {activeTableName && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              Current Table: {activeTableName}
+            </div>
+          )}
         </div>
       </div>
-      
-      <nav className="flex-1 mt-4 px-3 space-y-1">
+
+      <nav className="flex-1 mt-2 px-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
           <button
             key={item.id}

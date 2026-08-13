@@ -26,6 +26,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [settings, setSettings] = useState<AppSettings>(INITIAL_SETTINGS);
@@ -191,9 +192,18 @@ const App: React.FC = () => {
   const occupiedTablesCount = tables.filter(t => t.status === 'occupied').length;
   const totalTablesCount = tables.length;
 
+  const currentSelectedTable = tables.find(t => t.id === selectedTableId);
+  const activeTableName = currentSelectedTable ? currentSelectedTable.name : undefined;
+
   return (
     <div className={`min-h-screen flex transition-colors duration-300 ${getThemeClass()}`}>
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} settings={settings} />
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        settings={settings} 
+        profile={profile || undefined} 
+        activeTableName={activeTableName}
+      />
       
       <main className="flex-1 ml-64 p-8 relative">
         <header className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 mb-8">
@@ -311,6 +321,8 @@ const App: React.FC = () => {
               settings={settings}
               onOrderComplete={handleOrderComplete} 
               onTableUpdate={handleTableUpdate} 
+              selectedTableId={selectedTableId}
+              onSelectTable={setSelectedTableId}
             />
           )}
           {activeTab === 'menu' && <MenuMgmt menu={menu} onUpdate={handleMenuUpdate} />}

@@ -46,6 +46,8 @@ export interface Order {
   createdAt: number;
   cashAmount?: number;
   upiAmount?: number;
+  customerName?: string;
+  customerPhone?: string;
 }
 
 export interface BusinessProfile {

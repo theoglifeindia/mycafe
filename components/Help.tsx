@@ -74,8 +74,7 @@ const Help: React.FC<HelpProps> = ({ settings, profile }) => {
 
   // Contact form state
   const [contactName, setContactName] = useState(profile?.ownerName || '');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactPhone, setContactPhone] = useState(profile?.ownerNumber || '');
+  const [contactEmail, setContactEmail] = useState('help.mycafepos@gmail.com');
   const [subject, setSubject] = useState('General Support');
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -267,32 +266,17 @@ const Help: React.FC<HelpProps> = ({ settings, profile }) => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 block mb-1">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={contactEmail}
-                      onChange={(e) => setContactEmail(e.target.value)}
-                      placeholder="name@restaurant.com"
-                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 block mb-1">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      value={contactPhone}
-                      onChange={(e) => setContactPhone(e.target.value)}
-                      placeholder="+91 98765 43210"
-                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 block mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    readOnly
+                    value="help.mycafepos@gmail.com"
+                    className="w-full px-3.5 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 outline-none cursor-not-allowed"
+                  />
                 </div>
 
                 <div>

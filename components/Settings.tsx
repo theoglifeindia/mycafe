@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppSettings, BusinessProfile, ThemeType, InvoiceLine } from '../types.ts';
+import { compressImageDataUrl } from '../services/imageCompressor.ts';
 import { 
   Settings as SettingsIcon, 
   Image as ImageIcon, 
@@ -130,17 +131,28 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setLocalSettings(prev => ({ ...prev, logoUrl: reader.result as string }));
+    reader.onloadend = async () => {
+      const rawDataUrl = reader.result as string;
+      const compressed = await compressImageDataUrl(rawDataUrl, 300, 300, 0.7);
+      setLocalSettings(prev => ({ ...prev, logoUrl: compressed }));
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSaveAll = () => {
-    onSaveSettings(localSettings);
-    onSaveProfile(localProfile);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+  const handleSaveAll = async () => {
+    try {
+      let settingsToSave = { ...localSettings };
+      if (settingsToSave.logoUrl && settingsToSave.logoUrl.startsWith('data:image')) {
+        settingsToSave.logoUrl = await compressImageDataUrl(settingsToSave.logoUrl, 300, 300, 0.7);
+      }
+      await onSaveSettings(settingsToSave);
+      await onSaveProfile(localProfile);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (err) {
+      console.error('Settings save failed:', err);
+      alert('Failed to save settings. Please try uploading a smaller logo image.');
+    }
   };
 
   const addLine = (type: 'header' | 'footer') => {

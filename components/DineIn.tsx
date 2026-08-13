@@ -1,7 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { Table, MenuItem, Order, OrderItem, PaymentMethod, BusinessProfile, AppSettings } from '../types.ts';
-import { Plus, Minus, X, Check, ArrowLeft, Trash2, Search, Layers, CreditCard, Banknote, Smartphone, Tag, ReceiptText, Calculator, Printer, Clock, Maximize2, Minimize2, AlertTriangle } from 'lucide-react';
+import { db } from '../services/db.ts';
+import { Plus, Minus, X, Check, ArrowLeft, Trash2, Search, Layers, CreditCard, Banknote, Smartphone, Tag, ReceiptText, Calculator, Printer, Clock, Maximize2, Minimize2, AlertTriangle, User, Phone, UserCheck } from 'lucide-react';
 
 interface DineInProps {
   tables: Table[];
@@ -35,6 +36,11 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
   const [isExitGuardOpen, setIsExitGuardOpen] = useState(false);
   const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
   
+  const [isCustModalOpen, setIsCustModalOpen] = useState(false);
+  const [custNameInput, setCustNameInput] = useState('');
+  const [custPhoneInput, setCustPhoneInput] = useState('');
+  const [custTarget, setCustTarget] = useState<'print' | 'settle' | null>(null);
+
   const [paymentMode, setPaymentMode] = useState<PaymentMethod>('UPI');
   const [cashSplit, setCashSplit] = useState<number>(0);
   const [upiSplit, setUpiSplit] = useState<number>(0);
@@ -300,6 +306,60 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
     }, 1000);
   };
 
+  const handlePrintClick = () => {
+    if (!selectedTable || cart.length === 0) return;
+    if (selectedTable.customerName || selectedTable.customerPhone) {
+      printBill();
+    } else {
+      setCustNameInput('');
+      setCustPhoneInput('');
+      setCustTarget('print');
+      setIsCustModalOpen(true);
+    }
+  };
+
+  const handleSettleClick = () => {
+    if (!selectedTable || cart.length === 0) return;
+    if (selectedTable.customerName || selectedTable.customerPhone) {
+      const { total } = calculateTotal();
+      setUpiSplit(total);
+      setCashSplit(0);
+      setIsSettleModalOpen(true);
+    } else {
+      setCustNameInput('');
+      setCustPhoneInput('');
+      setCustTarget('settle');
+      setIsCustModalOpen(true);
+    }
+  };
+
+  const saveCustomerAndProceed = (skip: boolean = false) => {
+    setIsCustModalOpen(false);
+    if (!skip && (custNameInput.trim() || custPhoneInput.trim())) {
+      const { total } = calculateTotal();
+      const name = custNameInput.trim();
+      const phone = custPhoneInput.trim();
+      if (selectedTable) {
+        onTableUpdate(selectedTable.id, { customerName: name, customerPhone: phone });
+      }
+      try {
+        db.saveOrUpdateCustomer(name, phone, total);
+      } catch (e) {
+        console.error('Failed to save customer:', e);
+      }
+    }
+
+    if (custTarget === 'print') {
+      printBill();
+    } else if (custTarget === 'settle') {
+      const { total } = calculateTotal();
+      setUpiSplit(total);
+      setCashSplit(0);
+      setIsSettleModalOpen(true);
+    }
+    setCustTarget(null);
+  };
+
   const handleExitAttempt = () => {
     if (isDirty && cart.length > 0) {
       setIsExitGuardOpen(true);
@@ -518,7 +578,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
                 </button>
                 <div className="grid grid-cols-2 gap-2">
                   <button 
-                    onClick={printBill}
+                    onClick={handlePrintClick}
                     className={`py-3 border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
                       printState === 'success' ? 'bg-green-50 border-green-600 text-green-700' : 'bg-white text-gray-600 hover:bg-gray-50 shadow-sm'
                     }`}
@@ -526,12 +586,7 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
                     <Printer className="w-3.5 h-3.5" /> Print Bill
                   </button>
                   <button 
-                    onClick={() => {
-                      const { total } = calculateTotal();
-                      setUpiSplit(total);
-                      setCashSplit(0);
-                      setIsSettleModalOpen(true);
-                    }}
+                    onClick={handleSettleClick}
                     className={`py-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
                       settleState === 'success' ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'
                     }`}
@@ -800,6 +855,76 @@ const DineIn: React.FC<DineInProps> = ({ tables, menu, orders, profile, settings
           </div>
         ))}
       </div>
+      {/* Customer Information Prompt Modal */}
+      {isCustModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[650] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-blue-600" /> Customer Details
+                </h3>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
+                  Optional • Table {selectedTable?.name}
+                </p>
+              </div>
+              <button onClick={() => saveCustomerAndProceed(true)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">
+                  Customer Name
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Enter customer name (optional)"
+                    value={custNameInput}
+                    onChange={e => setCustNameInput(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">
+                  Mobile Number
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                  <input
+                    type="tel"
+                    placeholder="Enter mobile number (optional)"
+                    value={custPhoneInput}
+                    onChange={e => setCustPhoneInput(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => saveCustomerAndProceed(true)}
+                  className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+                >
+                  Skip
+                </button>
+                <button
+                  type="button"
+                  onClick={() => saveCustomerAndProceed(false)}
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md"
+                >
+                  Save & Proceed
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

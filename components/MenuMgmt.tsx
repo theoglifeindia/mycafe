@@ -6,6 +6,7 @@ import {
   Trash2, 
   Plus, 
   Upload, 
+  Download,
   X, 
   Loader2, 
   CheckCircle,
@@ -97,6 +98,24 @@ const MenuMgmt: React.FC<MenuMgmtProps> = ({ menu = [], onUpdate }) => {
   const handleDeleteClick = (item: MenuItem) => {
     setItemToDelete(item);
     setIsDeleteModalOpen(true);
+  };
+
+  const handleDownloadCsvTemplate = () => {
+    const headers = "Name,Category,Price,Type";
+    const sampleRows = [
+      'Espresso,Beverages,120,veg',
+      'Paneer Tikka,Starters,250,veg',
+      'Chicken Biryani,Main Course,320,non-veg',
+      'Chocolate Brownie,Desserts,180,veg'
+    ];
+    const csvContent = "data:text/csv;charset=utf-8," + [headers, ...sampleRows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "menu_import_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleBulkUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -222,6 +241,9 @@ const MenuMgmt: React.FC<MenuMgmtProps> = ({ menu = [], onUpdate }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64 font-medium"
           />
+          <button onClick={handleDownloadCsvTemplate} className="flex items-center px-4 py-2 text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-all shadow-sm active:scale-95" title="Download CSV Template for Menu Upload">
+            <Download className="w-4 h-4 mr-2 text-emerald-600" /> CSV Template
+          </button>
           <button onClick={() => fileInputRef.current?.click()} className="flex items-center px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm active:scale-95">
             <Upload className="w-4 h-4 mr-2 text-blue-500" /> Bulk Import
           </button>

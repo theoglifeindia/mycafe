@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
-import { Order, AppSettings, BusinessProfile } from '../types.ts';
+import { Order, AppSettings, BusinessProfile, Customer } from '../types.ts';
+import { db } from '../services/db.ts';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   LineChart, Line, PieChart as RePieChart, Pie, Cell 
@@ -8,7 +9,7 @@ import {
 import { 
   PieChart, TrendingUp, Download, Calendar, ArrowRight, 
   Wallet, Banknote, Tag, Receipt, ShoppingBag, ArrowUpRight,
-  Filter, Search, Clock, Smartphone
+  Filter, Search, Clock, Smartphone, Users, User
 } from 'lucide-react';
 
 interface ReportsProps {
@@ -20,6 +21,8 @@ interface ReportsProps {
 const COLORS = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b'];
 
 const Reports: React.FC<ReportsProps> = ({ orders = [], settings, profile }) => {
+  const [mainTab, setMainTab] = useState<'sales' | 'customers'>('sales');
+  const [customerSearch, setCustomerSearch] = useState('');
   const [reportType, setReportType] = useState<'weekly' | 'monthly' | 'custom'>('weekly');
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
@@ -103,9 +106,147 @@ const Reports: React.FC<ReportsProps> = ({ orders = [], settings, profile }) => 
     a.click();
   };
 
+  const customers = useMemo(() => {
+    try {
+      return db.getCustomers();
+    } catch {
+      return [];
+    }
+  }, [mainTab]);
+
+  const filteredCustomers = useMemo(() => {
+    const q = customerSearch.toLowerCase().trim();
+    if (!q) return customers;
+    return customers.filter(c => 
+      (c.name && c.name.toLowerCase().includes(q)) || 
+      (c.phone && c.phone.includes(q))
+    );
+  }, [customers, customerSearch]);
+
+  const exportCustomersCSV = () => {
+    const headers = ['Customer Name', 'Phone Number', 'Total Visits', 'Total Spent (INR)', 'Last Visit'];
+    const rows = filteredCustomers.map(c => [
+      `"${c.name || 'N/A'}"`,
+      `"${c.phone || 'N/A'}"`,
+      c.totalVisits || 1,
+      (c.totalSpent || 0).toFixed(2),
+      c.lastVisit ? new Date(c.lastVisit).toLocaleDateString() : 'N/A'
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Customer_Master_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header & Controls */}
+      {/* Top Section / Module Tabs */}
+      <div className="flex bg-gray-100 p-1.5 rounded-2xl w-fit border border-gray-200">
+        <button
+          onClick={() => setMainTab('sales')}
+          className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+            mainTab === 'sales' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-900'
+          }`}
+        >
+          <PieChart className="w-4 h-4" /> Sales Analytics
+        </button>
+        <button
+          onClick={() => setMainTab('customers')}
+          className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+            mainTab === 'customers' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-900'
+          }`}
+        >
+          <Users className="w-4 h-4" /> Customer Master ({customers.length})
+        </button>
+      </div>
+
+      {mainTab === 'customers' ? (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-black text-gray-800 tracking-tight flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-600" /> Customer List Report
+              </h2>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                Directory of all customers captured during billing & settlements
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                <input
+                  type="text"
+                  placeholder="Search by name or phone..."
+                  value={customerSearch}
+                  onChange={e => setCustomerSearch(e.target.value)}
+                  className="pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <button
+                onClick={exportCustomersCSV}
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" /> Export CSV
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            {filteredCustomers.length === 0 ? (
+              <div className="p-12 text-center text-gray-400">
+                <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm font-bold">No customers recorded yet.</p>
+                <p className="text-xs mt-1 text-gray-400">
+                  Customer records will automatically populate when printing bills or settling orders in Dine In.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      <th className="p-4 pl-6">Customer Name</th>
+                      <th className="p-4">Phone Number</th>
+                      <th className="p-4 text-center">Visits</th>
+                      <th className="p-4 text-right">Total Spent</th>
+                      <th className="p-4 pr-6 text-right">Last Visit</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50 text-xs font-bold text-gray-800">
+                    {filteredCustomers.map(c => (
+                      <tr key={c.id} className="hover:bg-gray-50/80 transition-colors">
+                        <td className="p-4 pl-6 flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs">
+                            {(c.name || 'C').charAt(0).toUpperCase()}
+                          </div>
+                          <span>{c.name || 'N/A'}</span>
+                        </td>
+                        <td className="p-4 text-gray-600">{c.phone || 'N/A'}</td>
+                        <td className="p-4 text-center">
+                          <span className="px-2.5 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-700">
+                            {c.totalVisits || 1}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right text-emerald-600 font-black">
+                          ₹{(c.totalSpent || 0).toFixed(2)}
+                        </td>
+                        <td className="p-4 pr-6 text-right text-gray-500 text-[11px]">
+                          {c.lastVisit ? new Date(c.lastVisit).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
           <h2 className="text-2xl font-black text-gray-800 tracking-tight flex items-center">
@@ -341,6 +482,8 @@ const Reports: React.FC<ReportsProps> = ({ orders = [], settings, profile }) => 
           </table>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };

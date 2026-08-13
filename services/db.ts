@@ -14,8 +14,9 @@ import {
   Timestamp,
   deleteField
 } from 'firebase/firestore';
-import { MenuItem, Table, Order, BusinessProfile, AppSettings } from '../types.ts';
+import { MenuItem, Table, Order, BusinessProfile, AppSettings, Customer } from '../types.ts';
 import { INITIAL_MENU, INITIAL_TABLES, INITIAL_PROFILE, INITIAL_SETTINGS } from '../constants.tsx';
+import { compressImageDataUrl } from './imageCompressor.ts';
 
 /**
  * Utility to remove undefined keys from an object before sending to Firestore.
@@ -131,7 +132,15 @@ class FirestoreService {
   }
 
   async updateSettings(settings: AppSettings) {
-    await setDoc(doc(firestore, 'config', 'app_settings'), cleanData(settings));
+    const cleaned = cleanData(settings);
+    if (cleaned.logoUrl && typeof cleaned.logoUrl === 'string' && cleaned.logoUrl.startsWith('data:image')) {
+      try {
+        cleaned.logoUrl = await compressImageDataUrl(cleaned.logoUrl, 300, 300, 0.7);
+      } catch (e) {
+        console.error("Failed to compress settings logoUrl:", e);
+      }
+    }
+    await setDoc(doc(firestore, 'config', 'app_settings'), cleaned);
   }
 
   async getProfile(): Promise<BusinessProfile | null> {
@@ -142,7 +151,70 @@ class FirestoreService {
   }
 
   async updateProfile(profile: BusinessProfile) {
-    await setDoc(doc(firestore, 'config', 'business_profile'), cleanData(profile));
+    const cleaned = cleanData(profile);
+    if (cleaned.logoUrl && typeof cleaned.logoUrl === 'string' && cleaned.logoUrl.startsWith('data:image')) {
+      try {
+        cleaned.logoUrl = await compressImageDataUrl(cleaned.logoUrl, 300, 300, 0.7);
+      } catch (e) {
+        console.error("Failed to compress profile logoUrl:", e);
+      }
+    }
+    await setDoc(doc(firestore, 'config', 'business_profile'), cleaned);
+  }
+
+  getCustomers(): Customer[] {
+    try {
+      const data = localStorage.getItem('pos_app_customers');
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.error("Failed to load customers from storage:", e);
+    }
+    return [];
+  }
+
+  saveOrUpdateCustomer(name: string, phone: string, amountSpent: number = 0): Customer {
+    const customers = this.getCustomers();
+    const existingIndex = customers.findIndex(c => 
+      (phone && c.phone === phone) || (name && name.length > 0 && c.name.toLowerCase() === name.toLowerCase())
+    );
+
+    const now = new Date().toISOString();
+    let updatedCustomer: Customer;
+
+    if (existingIndex >= 0) {
+      const existing = customers[existingIndex];
+      updatedCustomer = {
+        ...existing,
+        name: name || existing.name,
+        phone: phone || existing.phone,
+        totalVisits: (existing.totalVisits || 1) + 1,
+        totalSpent: (existing.totalSpent || 0) + amountSpent,
+        lastVisit: now
+      };
+      customers[existingIndex] = updatedCustomer;
+    } else {
+      updatedCustomer = {
+        id: `CUST_${Date.now()}`,
+        name: name || 'Guest',
+        phone: phone || '-',
+        totalVisits: 1,
+        totalSpent: amountSpent,
+        lastVisit: now,
+        createdAt: now
+      };
+      customers.push(updatedCustomer);
+    }
+
+    try {
+      localStorage.setItem('pos_app_customers', JSON.stringify(customers));
+      setDoc(doc(firestore, 'customers', updatedCustomer.id), cleanData(updatedCustomer)).catch(err => 
+        console.error("Customer Firestore sync error:", err)
+      );
+    } catch (e) {
+      console.error("Failed to save customer:", e);
+    }
+
+    return updatedCustomer;
   }
 }
 

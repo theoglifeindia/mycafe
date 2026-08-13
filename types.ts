@@ -21,6 +21,8 @@ export interface Table {
   currentOrderId?: string;
   orderValue?: number;
   sessionStartTime?: number;
+  customerName?: string;
+  customerPhone?: string;
 }
 
 export interface OrderItem {
@@ -74,4 +76,14 @@ export interface AppSettings {
   bodyFontSize: number;
   gstEnabled: boolean;
   gstPercentage: number;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  totalVisits: number;
+  totalSpent: number;
+  lastVisit: string;
+  createdAt: string;
 }

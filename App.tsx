@@ -14,6 +14,7 @@ import Login from './components/Login.tsx';
 import { db } from './services/db.ts';
 import { MenuItem, Table, Order, BusinessProfile, AppSettings } from './types.ts';
 import { INITIAL_SETTINGS } from './constants.tsx';
+import { BillWiseLogo } from './components/BillWiseLogo.tsx';
 import { Clock, Calendar, Bell, User as UserIcon, CheckCircle2, AlertTriangle, PieChart as PieChartIcon, Loader2, Tag, Sparkles, LogOut } from 'lucide-react';
 
 const OFFERS = [
@@ -233,7 +234,7 @@ const App: React.FC = () => {
   };
 
   const isDark = settings.theme === 'Midnight';
-  const bName = settings.businessName || settings.invoiceHeader || 'Cafe Rock Bottom';
+  const bName = settings.businessName || profile?.ownerName || settings.invoiceHeader || 'Chai Hub';
   const occupiedTablesCount = tables.filter(t => t.status === 'occupied').length;
   const totalTablesCount = tables.length;
 
@@ -250,30 +251,40 @@ const App: React.FC = () => {
         activeTableName={activeTableName}
       />
       
-      <main className="flex-1 ml-64 p-8 relative">
-        <header className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 mb-8">
-          {/* 1. Cloud Live & System Status (Replaces duplicate business name) */}
-          <div className={`flex items-center space-x-3 p-3 rounded-2xl border transition-all ${
+      <main className="flex-1 ml-64 p-8 relative flex flex-col min-h-screen">
+        <header className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 mb-8">
+          {/* 1. Big BillWise POS System Brand with Client Context */}
+          <div className={`flex items-center space-x-4 p-3.5 px-5 rounded-2xl border transition-all ${
             isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100 shadow-sm'
           }`}>
-            <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl border text-[11px] font-black uppercase tracking-wider ${
-              dbStatus === 'connected'
-                ? isDark ? 'bg-emerald-950/50 border-emerald-800/60 text-emerald-400' : 'bg-emerald-50 border-emerald-200/80 text-emerald-700 shadow-xs'
-                : isDark ? 'bg-rose-950/50 border-rose-800/60 text-rose-400' : 'bg-rose-50 border-rose-200/80 text-rose-700 shadow-xs'
-            }`}>
-              <span className="relative flex h-2.5 w-2.5">
-                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                  dbStatus === 'connected' ? 'bg-emerald-400' : 'bg-rose-400'
-                }`} />
-                <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-                  dbStatus === 'connected' ? 'bg-emerald-500' : 'bg-rose-500'
-                }`} />
-              </span>
-              <span>{dbStatus === 'connected' ? 'Cloud Live' : 'Offline Mode'}</span>
-            </div>
-            <div className="text-left hidden sm:block border-l border-gray-100 pl-3">
-              <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">POS Terminal</div>
-              <div className="text-xs font-black text-blue-600">v2.5 Pro</div>
+            <BillWiseLogo size="lg" variant={isDark ? 'light' : 'dark'} />
+            
+            <div className="hidden sm:block h-9 w-px bg-gray-200 dark:bg-slate-800" />
+            
+            <div className="text-left hidden sm:block">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Client:</span>
+                <span className="text-xs font-black text-amber-600 dark:text-amber-400">{bName}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <div className={`inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider ${
+                  dbStatus === 'connected'
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  <span className="relative flex h-2 w-2">
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                      dbStatus === 'connected' ? 'bg-emerald-400' : 'bg-rose-400'
+                    }`} />
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                      dbStatus === 'connected' ? 'bg-emerald-500' : 'bg-rose-500'
+                    }`} />
+                  </span>
+                  <span>{dbStatus === 'connected' ? 'Cloud Live' : 'Offline'}</span>
+                </div>
+                <span className="text-gray-300 dark:text-slate-700">•</span>
+                <span className="text-[10px] font-bold text-gray-400">Terminal #01</span>
+              </div>
             </div>
           </div>
 
@@ -295,7 +306,7 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* 3. Notification of Table Status & Live Time/Profile */}
+          {/* 3. Notification of Table Status & Live Time/Profile/Logout */}
           <div className="flex items-center space-x-3">
             <button 
               onClick={() => setActiveTab('dinein')}
@@ -324,7 +335,7 @@ const App: React.FC = () => {
               </div>
             </button>
 
-            {/* Time & User */}
+            {/* Time & User & Top-Right Logout */}
             <div className={`p-3 rounded-2xl border flex items-center space-x-3 ${
               isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-gray-100 shadow-sm text-gray-800'
             }`}>
@@ -365,7 +376,7 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <div className="max-w-[1500px] mx-auto">
+        <div className="max-w-[1500px] mx-auto w-full flex-1">
           {activeTab === 'dashboard' && <Dashboard orders={orders} settings={settings} />}
           {activeTab === 'dinein' && profile && (
             <DineIn 
@@ -406,6 +417,30 @@ const App: React.FC = () => {
           {activeTab === 'profile' && profile && <Profile profile={profile} settings={settings} onSave={handleProfileSave} />}
           {activeTab === 'help' && <Help settings={settings} profile={profile} />}
         </div>
+
+        {/* Small Horizontal Footer of App as Branding */}
+        <footer className={`mt-12 py-3.5 px-6 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs ${
+          isDark ? 'bg-slate-900/60 border-slate-800/80 text-slate-400' : 'bg-white/80 border-gray-200/70 text-gray-500 shadow-xs'
+        }`}>
+          <div className="flex items-center space-x-3">
+            <BillWiseLogo size="xs" variant={isDark ? 'light' : 'dark'} />
+            <span className="text-gray-300 dark:text-slate-700">|</span>
+            <span className="text-[11px] font-bold tracking-tight">
+              Enterprise Point of Sale Platform
+            </span>
+          </div>
+
+          <div className="flex items-center flex-wrap justify-center gap-3 text-[10px] font-black uppercase tracking-wider">
+            <span className="text-amber-600 dark:text-amber-400 font-bold">Client: {bName}</span>
+            <span className="text-gray-300 dark:text-slate-700">•</span>
+            <span className="text-gray-400">Terminal Station #01</span>
+            <span className="text-gray-300 dark:text-slate-700">•</span>
+            <span className="text-emerald-500 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Cloud Sync Active
+            </span>
+          </div>
+        </footer>
       </main>
 
       {/* Logout Confirmation Modal */}

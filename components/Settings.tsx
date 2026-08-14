@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppSettings, BusinessProfile, ThemeType, InvoiceLine } from '../types.ts';
 import { compressImageDataUrl } from '../services/imageCompressor.ts';
+import { BillWiseLogo } from './BillWiseLogo.tsx';
 import { 
   Settings as SettingsIcon, 
   Image as ImageIcon, 
@@ -21,7 +22,10 @@ import {
   AlignLeft, 
   AlignCenter, 
   AlignRight, 
-  Type 
+  Type,
+  ShieldCheck,
+  Cpu,
+  Sparkles
 } from 'lucide-react';
 
 interface SettingsProps {
@@ -240,6 +244,53 @@ const Settings: React.FC<SettingsProps> = ({ settings, profile, onSaveSettings, 
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
+      {/* Big BillWise POS Engine Platform Banner */}
+      <div className={`p-8 rounded-3xl border relative overflow-hidden transition-all ${
+        isDark 
+          ? 'bg-slate-900 border-slate-800 text-white' 
+          : 'bg-gradient-to-br from-slate-900 via-slate-850 to-blue-950 text-white shadow-xl'
+      }`}>
+        <div className="absolute -right-10 -bottom-10 w-80 h-80 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-wider text-blue-300 border border-white/10">
+              <Cpu className="w-3.5 h-3.5" />
+              <span>Enterprise POS Engine Configuration</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <BillWiseLogo size="xl" variant="light" />
+              <div className="hidden sm:block h-10 w-px bg-white/15" />
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Licensed Operating System</div>
+                <div className="text-sm font-black text-amber-300">
+                  Client Business: {localSettings.businessName || localProfile.ownerName || 'Chai Hub'}
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 max-w-2xl font-medium leading-relaxed">
+              You are configuring the <strong className="text-white">BillWise POS System</strong> for your restaurant outlet. Customize your store receipts, thermal invoice layouts, menu tax preferences, and operational theme below.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap lg:flex-col gap-2.5 min-w-[200px]">
+            <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm text-xs w-full">
+              <span className="text-slate-400 text-[10px] font-bold uppercase">POS Engine</span>
+              <span className="font-black text-blue-400 text-xs">v2.5 Pro</span>
+            </div>
+            <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm text-xs w-full">
+              <span className="text-slate-400 text-[10px] font-bold uppercase">Client Status</span>
+              <span className="font-black text-emerald-400 text-xs flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                Active Station
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className={`rounded-2xl shadow-sm border overflow-hidden transition-all ${
         isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
       }`}>

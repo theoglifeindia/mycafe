@@ -25,7 +25,7 @@ const navItems = [
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, profile, activeTableName }) => {
   const isDark = settings.theme === 'Midnight';
-  const bName = settings.businessName || profile?.ownerName || settings.invoiceHeader || 'Cafe Rock Bottom';
+  const bName = settings.businessName || profile?.ownerName || settings.invoiceHeader || 'Chai Hub';
   const logoUrl = settings.logoUrl;
 
   return (
@@ -44,8 +44,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, pr
               className="w-full h-full object-contain block mx-auto rounded-xl" 
             />
           ) : (
-            <div className="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-md my-1">
-              {bName.charAt(0) || 'R'}
+            <div className="w-14 h-14 bg-gradient-to-tr from-amber-600 to-orange-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-md my-1">
+              {bName.charAt(0) || 'C'}
             </div>
           )}
         </div>
@@ -53,8 +53,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, pr
           <h1 className={`text-base font-black leading-tight tracking-tight break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>
             {bName}
           </h1>
-          <p className={`text-[10px] uppercase tracking-widest font-extrabold ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-            POS SYSTEM
+          <p className={`text-[10px] uppercase tracking-widest font-extrabold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+            Powered by BiLLWiSE
           </p>
           {activeTableName && (
             <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm">

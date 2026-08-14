@@ -2,6 +2,8 @@
 import React, { useState, useMemo } from 'react';
 import { Order, AppSettings, BusinessProfile, Customer } from '../types.ts';
 import { db } from '../services/db.ts';
+import { generateSalesReportPdf, generateCustomerReportPdf } from '../services/reportPdfGenerator.ts';
+import { BillWiseLogo } from './BillWiseLogo.tsx';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   LineChart, Line, PieChart as RePieChart, Pie, Cell 
@@ -9,7 +11,7 @@ import {
 import { 
   PieChart, TrendingUp, Download, Calendar, ArrowRight, 
   Wallet, Banknote, Tag, Receipt, ShoppingBag, ArrowUpRight,
-  Filter, Search, Clock, Smartphone, Users, User
+  Filter, Search, Clock, Smartphone, Users, User, FileText, CheckCircle2
 } from 'lucide-react';
 
 interface ReportsProps {
@@ -143,6 +145,41 @@ const Reports: React.FC<ReportsProps> = ({ orders = [], settings, profile }) => 
   };
 
   const isDark = settings.theme === 'Midnight';
+  const bName = settings.businessName || profile?.ownerName || settings.invoiceHeader || 'Chai Hub';
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
+
+  const handleDownloadSalesPdf = () => {
+    setIsPdfGenerating(true);
+    try {
+      generateSalesReportPdf({
+        orders: filteredOrders,
+        settings,
+        profile,
+        startDate,
+        endDate,
+        reportType,
+      });
+    } catch (err) {
+      console.error('Failed to generate sales report PDF', err);
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
+
+  const handleDownloadCustomerPdf = () => {
+    setIsPdfGenerating(true);
+    try {
+      generateCustomerReportPdf({
+        customers: filteredCustomers,
+        settings,
+        profile,
+      });
+    } catch (err) {
+      console.error('Failed to generate customer report PDF', err);
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -185,7 +222,7 @@ const Reports: React.FC<ReportsProps> = ({ orders = [], settings, profile }) => 
                 Directory of all customers captured during billing & settlements
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <div className="relative">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                 <input
@@ -201,10 +238,21 @@ const Reports: React.FC<ReportsProps> = ({ orders = [], settings, profile }) => 
                 />
               </div>
               <button
-                onClick={exportCustomersCSV}
-                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                onClick={handleDownloadCustomerPdf}
+                disabled={isPdfGenerating}
+                className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:from-blue-500 hover:to-indigo-500 transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                title="Download Customer Master as PDF"
               >
-                <Download className="w-4 h-4" /> Export CSV
+                <FileText className="w-4 h-4 text-blue-200" />
+                <span>{isPdfGenerating ? 'Generating...' : 'Download PDF'}</span>
+              </button>
+              <button
+                onClick={exportCustomersCSV}
+                className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all border flex items-center gap-2 cursor-pointer ${
+                  isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Download className="w-4 h-4" /> CSV
               </button>
             </div>
           </div>
@@ -343,14 +391,54 @@ const Reports: React.FC<ReportsProps> = ({ orders = [], settings, profile }) => 
             </div>
           </div>
 
-          <button 
-            onClick={exportCSV}
-            className="p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all shadow-lg active:scale-95 cursor-pointer"
-            title="Export Report"
-          >
-            <Download className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleDownloadSalesPdf}
+              disabled={isPdfGenerating}
+              className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              title="Generate PDF Report (Header: Business Name, Bottom: BiLLWiSE Branding)"
+            >
+              <FileText className="w-4 h-4 text-blue-200" />
+              <span>{isPdfGenerating ? 'Generating...' : 'Download PDF'}</span>
+            </button>
+
+            <button 
+              onClick={exportCSV}
+              className={`p-2.5 rounded-2xl border transition-all active:scale-95 cursor-pointer ${
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200'
+              }`}
+              title="Export as CSV Spreadsheet"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
         </div>
+      </div>
+
+      {/* PDF Header / Branding Info Banner */}
+      <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs ${
+        isDark ? 'bg-slate-900/60 border-slate-800 text-slate-300' : 'bg-blue-50/70 border-blue-100 text-blue-900'
+      }`}>
+        <div className="flex items-center space-x-3">
+          <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
+            <FileText className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="font-bold">PDF Report Format:</span>{' '}
+            <span className="font-medium text-slate-400 dark:text-slate-400">
+              Header features client <strong className={isDark ? 'text-amber-300' : 'text-amber-700'}>{bName}</strong> details & stats; Footer includes <strong className={isDark ? 'text-blue-400' : 'text-blue-600'}>BiLLWiSE POS Platform</strong> official branding.
+            </span>
+          </div>
+        </div>
+
+        <button 
+          onClick={handleDownloadSalesPdf}
+          disabled={isPdfGenerating}
+          className="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+        >
+          <span>Generate A4 PDF</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Metrics Grid */}

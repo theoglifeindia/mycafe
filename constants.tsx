@@ -43,26 +43,26 @@ export const INITIAL_TABLES: Table[] = [
 ];
 
 export const INITIAL_PROFILE: BusinessProfile = {
-  ownerName: 'Cafe Rock Bottom',
+  ownerName: 'Chai Hub',
   ownerNumber: '+91 98765 43210',
   fssai: '12345678901234',
   address: '41, Mangalmurti Sq, Jaitala Road, Nagpur-440022'
 };
 
 export const INITIAL_SETTINGS: AppSettings = {
-  theme: 'Rock Bottom',
-  businessName: 'Cafe Rock Bottom',
+  theme: 'Midnight',
+  businessName: 'Chai Hub',
   showLogoOnBill: true,
   showAddressOnBill: true,
-  invoiceHeader: 'Cafe Rock Bottom',
-  invoiceFooter: 'Visit Again! Follow us @caferockbottom',
+  invoiceHeader: 'Chai Hub',
+  invoiceFooter: 'Visit Again! Follow us @chaihub',
   headerLines: [
-    { id: 'h1', text: 'CAFE ROCK BOTTOM', size: 16, bold: true, align: 'center' },
-    { id: 'h2', text: 'Quality Coffee & Food', size: 12, bold: false, align: 'center' }
+    { id: 'h1', text: 'CHAI HUB', size: 16, bold: true, align: 'center' },
+    { id: 'h2', text: 'Fresh Brews & Delicious Bites', size: 12, bold: false, align: 'center' }
   ],
   footerLines: [
-    { id: 'f1', text: 'Thank You For Visiting!', size: 12, bold: true, align: 'center' },
-    { id: 'f2', text: 'Follow us @caferockbottom', size: 10, bold: false, align: 'center' }
+    { id: 'f1', text: 'Thank You For Visiting Chai Hub!', size: 12, bold: true, align: 'center' },
+    { id: 'f2', text: 'Follow us @chaihub', size: 10, bold: false, align: 'center' }
   ],
   bodyFontSize: 12,
   gstEnabled: false,

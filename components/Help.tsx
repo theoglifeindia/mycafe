@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AppSettings, BusinessProfile } from '../types.ts';
+import { BillWiseLogo } from './BillWiseLogo.tsx';
 import { 
   HelpCircle, 
   Search, 
@@ -13,7 +14,8 @@ import {
   Utensils, 
   Settings as SettingsIcon,
   ShieldCheck,
-  LifeBuoy
+  LifeBuoy,
+  Sparkles
 } from 'lucide-react';
 
 interface HelpProps {
@@ -113,30 +115,57 @@ const Help: React.FC<HelpProps> = ({ settings, profile }) => {
 
   return (
     <div className="space-y-8 animate-fadeIn pb-12">
-      {/* Header Banner */}
-      <div className={`p-8 rounded-3xl border transition-all ${
-        isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-xl'
+      {/* Header Banner with Big BillWise Branding */}
+      <div className={`p-8 sm:p-10 rounded-3xl border transition-all relative overflow-hidden ${
+        isDark 
+          ? 'bg-slate-900 border-slate-800 text-white' 
+          : 'bg-gradient-to-br from-slate-900 via-slate-850 to-blue-950 text-white shadow-2xl'
       }`}>
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-wider mb-4">
-            <LifeBuoy className="w-3.5 h-3.5" />
-            <span>Support & Documentation Center</span>
-          </div>
-          <h1 className="text-3xl font-black tracking-tight">{bName} Help Desk</h1>
-          <p className="text-sm opacity-90 mt-2 font-medium leading-relaxed">
-            Find instant answers to common POS questions, learn how to configure your restaurant workflow, or send a message directly to technical support.
-          </p>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+          <div className="max-w-2xl space-y-4">
+            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-wider text-blue-200 border border-white/10">
+              <LifeBuoy className="w-3.5 h-3.5" />
+              <span>Official System Help & Documentation</span>
+            </div>
 
-          {/* Search bar */}
-          <div className="mt-6 relative max-w-xl">
-            <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input 
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search help topics, printing issues, table setup..."
-              className="w-full pl-12 pr-4 py-3.5 bg-white text-gray-900 rounded-2xl text-sm font-medium shadow-lg outline-none focus:ring-4 focus:ring-blue-400/30 transition-all placeholder:text-gray-400"
-            />
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <BillWiseLogo size="xl" variant="light" />
+              </div>
+              <p className="text-xs font-black uppercase tracking-widest text-amber-300">
+                Operating for Client: {bName}
+              </p>
+            </div>
+
+            <p className="text-sm text-slate-300 font-medium leading-relaxed max-w-xl">
+              Instant documentation, operational workflows, thermal receipt guidance, and direct support for <strong className="text-white">BillWise POS</strong> terminals.
+            </p>
+
+            {/* Search bar */}
+            <div className="pt-2 relative max-w-xl">
+              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search help topics, printing issues, table setup..."
+                className="w-full pl-12 pr-4 py-3.5 bg-white/10 text-white border border-white/20 rounded-2xl text-sm font-medium shadow-lg outline-none focus:ring-4 focus:ring-blue-400/30 backdrop-blur-md transition-all placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+
+          <div className="hidden lg:flex flex-col items-center justify-center p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm text-center min-w-[240px]">
+            <BillWiseLogo size="lg" variant="light" showTagline tagline="POS SYSTEM" />
+            <div className="mt-4 pt-3 border-t border-white/10 w-full space-y-1">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Client License</div>
+              <div className="text-xs font-black text-amber-300">{bName}</div>
+              <div className="text-[9px] font-bold text-emerald-400 flex items-center justify-center gap-1 mt-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                Active Support Channel
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -337,23 +366,40 @@ const Help: React.FC<HelpProps> = ({ settings, profile }) => {
           </div>
 
           {/* System Info Box */}
-          <div className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-gray-50 border-gray-200/60 text-gray-900'}`}>
-            <div className="flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-gray-400 mb-3">
-              <ShieldCheck className="w-4 h-4 text-emerald-500" />
-              <span>System & Environment</span>
+          <div className={`p-6 rounded-3xl border space-y-4 ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-gray-50 border-gray-200/60 text-gray-900'}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-gray-400">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span>POS Software Platform</span>
+              </div>
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                Official Release
+              </span>
             </div>
+
+            <div className="flex justify-center py-2">
+              <BillWiseLogo size="md" variant={isDark ? 'light' : 'dark'} showTagline tagline="ENTERPRISE RESTAURANT POS" />
+            </div>
+
             <div className="space-y-2 text-xs font-medium">
               <div className={`flex justify-between border-b pb-1.5 ${isDark ? 'border-slate-800 text-slate-300' : 'border-gray-200/50 text-gray-600'}`}>
-                <span className="text-gray-400">POS Version</span>
-                <span className="font-bold">v2.5.0 Pro</span>
+                <span className="text-gray-400">POS Software</span>
+                <span className="font-bold text-blue-500">BillWise Engine v2.5 Pro</span>
               </div>
               <div className={`flex justify-between border-b pb-1.5 ${isDark ? 'border-slate-800 text-slate-300' : 'border-gray-200/50 text-gray-600'}`}>
-                <span className="text-gray-400">Business Unit</span>
-                <span className="font-bold">{bName}</span>
+                <span className="text-gray-400">Client Account</span>
+                <span className="font-bold text-amber-500">{bName}</span>
               </div>
               <div className={`flex justify-between border-b pb-1.5 ${isDark ? 'border-slate-800 text-slate-300' : 'border-gray-200/50 text-gray-600'}`}>
-                <span className="text-gray-400">Database Status</span>
-                <span className="font-bold text-emerald-500">Online & Synced</span>
+                <span className="text-gray-400">Terminal Station</span>
+                <span className="font-bold">Terminal #01 (Main POS)</span>
+              </div>
+              <div className={`flex justify-between ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                <span className="text-gray-400">Cloud Sync Status</span>
+                <span className="font-bold text-emerald-500 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                  Active & Protected
+                </span>
               </div>
             </div>
           </div>

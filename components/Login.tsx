@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, User, LogIn, Eye, EyeOff, AlertCircle, ShieldCheck, Utensils } from 'lucide-react';
 import { AppSettings, BusinessProfile } from '../types.ts';
+import { BillWiseLogo } from './BillWiseLogo.tsx';
 
 interface LoginProps {
   onLogin: (user: string, pass: string) => boolean;
@@ -15,7 +16,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, settings, profile }) => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const bName = settings.businessName || profile?.ownerName || settings.invoiceHeader || 'Cafe POS System';
+  const bName = settings.businessName || profile?.ownerName || settings.invoiceHeader || 'Chai Hub';
   const logoUrl = settings.logoUrl;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -46,24 +47,19 @@ const Login: React.FC<LoginProps> = ({ onLogin, settings, profile }) => {
 
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative z-10 animate-in fade-in zoom-in duration-300">
         
-        {/* Brand Header */}
-        <div className="flex flex-col items-center text-center space-y-3 mb-8">
-          <div className="w-full max-w-[240px] h-28 bg-slate-800/90 border border-slate-700/80 rounded-2xl p-2 flex items-center justify-center overflow-hidden shadow-xl mb-1">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain block mx-auto rounded-xl" />
-            ) : (
-              <div className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-lg">
-                <Utensils className="w-7 h-7 text-white" />
-              </div>
-            )}
+        {/* BillWise POS Brand Header */}
+        <div className="flex flex-col items-center text-center space-y-3 mb-6">
+          <div className="p-4 bg-slate-800/80 border border-slate-700/80 rounded-2xl w-full flex flex-col items-center justify-center shadow-lg">
+            <BillWiseLogo size="xl" variant="light" showTagline tagline="POINT OF SALE SYSTEM" />
           </div>
 
-          <div>
-            <h1 className="text-xl font-black text-white tracking-tight leading-snug">
+          <div className="pt-1">
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Client Workspace</div>
+            <h1 className="text-lg font-black text-amber-300 tracking-tight leading-snug">
               {bName}
             </h1>
-            <p className="text-[11px] font-black uppercase tracking-widest text-blue-400 mt-1 flex items-center justify-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5" /> Terminal Authentication
+            <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mt-1 flex items-center justify-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Terminal Station Authentication
             </p>
           </div>
         </div>
@@ -121,7 +117,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, settings, profile }) => {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3.5 top-3.5 text-slate-500 hover:text-slate-300 transition-colors"
-                tabIndex={-1}
+                title={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -131,23 +127,31 @@ const Login: React.FC<LoginProps> = ({ onLogin, settings, profile }) => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg hover:shadow-blue-600/30 active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer mt-2"
+            className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center space-x-2 shadow-lg shadow-blue-600/30 transition-all disabled:opacity-50 active:scale-98 cursor-pointer"
           >
             {isSubmitting ? (
-              <span>Authenticating...</span>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
                 <LogIn className="w-4 h-4" />
-                <span>Sign In to POS</span>
+                <span>Sign In to POS Terminal</span>
               </>
             )}
           </button>
         </form>
 
-        {/* Footer info */}
-        <div className="mt-8 pt-6 border-t border-slate-800/80 text-center">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            POS Terminal Security &bull; Protected Access
+        {/* Demo credentials hint */}
+        <div className="mt-6 pt-5 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+          <div>
+            Default Admin: <span className="font-bold text-blue-400">admin</span> / <span className="font-bold text-blue-400">admin</span>
+          </div>
+          <div className="text-[9px] font-black uppercase text-slate-600">v2.5 Pro</div>
+        </div>
+
+        {/* Bottom footer branding */}
+        <div className="mt-4 pt-3 border-t border-slate-800/60 text-center">
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+            Powered by BiLLWiSE POS Platform • Client: {bName}
           </p>
         </div>
       </div>

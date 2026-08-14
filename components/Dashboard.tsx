@@ -77,11 +77,19 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], settings }) => {
     }
   };
 
+  const isDark = settings?.theme === 'Midnight';
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Dashboard</h2>
-        <button className="px-4 py-2 bg-white border border-gray-200 rounded-md text-sm font-medium hover:bg-gray-50">Filter</button>
+        <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Dashboard</h2>
+        <button className={`px-4 py-2 border rounded-xl text-sm font-medium transition-all ${
+          isDark 
+            ? 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800' 
+            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm'
+        }`}>
+          Filter
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -96,14 +104,31 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], settings }) => {
           { label: 'Total Given Discount', value: `₹${formatCurrency(totalDiscount)}`, highlight: true },
           { label: 'Live Total No. of Orders', value: '0', highlight: true },
         ].map((card, idx) => (
-          <div key={idx} className={`p-5 rounded-lg border border-gray-100 ${card.highlight ? 'bg-blue-600 text-white' : 'bg-white shadow-sm'}`}>
-            <p className={`text-xs font-semibold uppercase mb-2 ${card.highlight ? 'text-blue-100' : 'text-gray-500'}`}>{card.label}</p>
+          <div 
+            key={idx} 
+            className={`p-5 rounded-2xl border transition-all ${
+              card.highlight 
+                ? 'bg-blue-600 border-blue-500 text-white shadow-md' 
+                : isDark 
+                  ? 'bg-slate-900 border-slate-800 text-white shadow-sm' 
+                  : 'bg-white border-gray-100 text-gray-900 shadow-sm'
+            }`}
+          >
+            <p className={`text-xs font-semibold uppercase mb-2 ${
+              card.highlight 
+                ? 'text-blue-100' 
+                : isDark 
+                  ? 'text-slate-400' 
+                  : 'text-gray-500'
+            }`}>
+              {card.label}
+            </p>
             <p className="text-xl font-bold">{card.value}</p>
           </div>
         ))}
 
         {/* AI Business Insights Card */}
-        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-lg shadow-lg text-white col-span-1 md:col-span-2 lg:col-span-5 border border-indigo-400/30">
+        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-2xl shadow-lg text-white col-span-1 md:col-span-2 lg:col-span-5 border border-indigo-400/30">
           <div className="flex justify-between items-start">
             <div className="flex-1">
               <h3 className="text-lg font-bold mb-2 flex items-center">
@@ -131,16 +156,24 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], settings }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
-          <h3 className="text-lg font-bold mb-6">Most Order Items</h3>
+        <div className={`p-6 rounded-2xl border transition-all ${
+          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-100 text-gray-900 shadow-sm'
+        }`}>
+          <h3 className={`text-lg font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Most Order Items</h3>
           <div className="h-64 w-full" style={{ minHeight: '256px' }}>
             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis fontSize={10} tickLine={false} axisLine={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#334155' : '#f3f4f6'} />
+                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} stroke={isDark ? '#94a3b8' : '#6b7280'} />
+                <YAxis fontSize={10} tickLine={false} axisLine={false} stroke={isDark ? '#94a3b8' : '#6b7280'} />
                 <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  contentStyle={{ 
+                    backgroundColor: isDark ? '#0f172a' : '#ffffff', 
+                    color: isDark ? '#ffffff' : '#000000',
+                    borderRadius: '12px', 
+                    border: isDark ? '1px solid #334155' : 'none', 
+                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' 
+                  }}
                 />
                 <Bar dataKey="val" fill="#ef4444" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -148,8 +181,10 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], settings }) => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-100 shadow-sm">
-          <h3 className="text-lg font-bold mb-6">Order Type Sale Summary</h3>
+        <div className={`p-6 rounded-2xl border transition-all ${
+          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-100 text-gray-900 shadow-sm'
+        }`}>
+          <h3 className={`text-lg font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Order Type Sale Summary</h3>
           <div className="h-64 w-full flex items-center justify-center" style={{ minHeight: '256px' }}>
             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <RePieChart>
@@ -167,7 +202,13 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], settings }) => {
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  contentStyle={{ 
+                    backgroundColor: isDark ? '#0f172a' : '#ffffff', 
+                    color: isDark ? '#ffffff' : '#000000',
+                    borderRadius: '12px', 
+                    border: isDark ? '1px solid #334155' : 'none', 
+                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' 
+                  }}
                 />
               </RePieChart>
             </ResponsiveContainer>

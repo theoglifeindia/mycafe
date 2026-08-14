@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, UtensilsCrossed, BookOpen, Settings2, History, PieChart, Store, User, HelpCircle, LogOut } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, BookOpen, Settings2, History, PieChart, Store, User, HelpCircle } from 'lucide-react';
 import { AppSettings, BusinessProfile } from '../types.ts';
 
 interface SidebarProps {
@@ -9,7 +9,6 @@ interface SidebarProps {
   settings: AppSettings;
   profile?: BusinessProfile;
   activeTableName?: string;
-  onLogout?: () => void;
 }
 
 const navItems = [
@@ -24,7 +23,7 @@ const navItems = [
   { id: 'help', label: 'Help', icon: HelpCircle },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, profile, activeTableName, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, profile, activeTableName }) => {
   const isDark = settings.theme === 'Midnight';
   const bName = settings.businessName || profile?.ownerName || settings.invoiceHeader || 'Cafe Rock Bottom';
   const logoUrl = settings.logoUrl;
@@ -35,15 +34,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, pr
     }`}>
       {/* Top Header: Logo (fit 100% width) & Business Name below logo */}
       <div className="p-4 flex flex-col items-center text-center space-y-3">
-        <div className="w-full bg-slate-50 border border-gray-100 rounded-2xl p-2.5 flex items-center justify-center overflow-hidden shadow-sm">
+        <div className={`w-full h-28 ${
+          isDark ? 'bg-slate-800/90 border-slate-700/80' : 'bg-slate-50 border-gray-200'
+        } border rounded-2xl p-2 flex items-center justify-center overflow-hidden shadow-sm`}>
           {logoUrl ? (
             <img 
               src={logoUrl} 
               alt="Logo" 
-              className="w-full h-auto max-h-32 object-contain block mx-auto rounded-xl" 
+              className="w-full h-full object-contain block mx-auto rounded-xl" 
             />
           ) : (
-            <div className="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-md my-1">
+            <div className="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-md my-1">
               {bName.charAt(0) || 'R'}
             </div>
           )}
@@ -83,8 +84,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, pr
         ))}
       </nav>
 
-      <div className={`p-3.5 mt-auto border-t flex items-center justify-between gap-2 ${isDark ? 'border-slate-800' : 'border-gray-100'}`}>
-        <div className={`p-2.5 rounded-xl flex items-center space-x-2.5 flex-1 overflow-hidden ${isDark ? 'bg-slate-800/50' : 'bg-blue-50'}`}>
+      <div className={`p-3.5 mt-auto border-t flex items-center ${isDark ? 'border-slate-800' : 'border-gray-100'}`}>
+        <div className={`p-2.5 rounded-xl flex items-center space-x-2.5 w-full overflow-hidden ${isDark ? 'bg-slate-800/50' : 'bg-blue-50'}`}>
           <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-black flex-shrink-0">
             AD
           </div>
@@ -93,20 +94,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, pr
             <p className="text-[9px] text-blue-500 font-black uppercase tracking-tighter">Terminal #01</p>
           </div>
         </div>
-
-        {onLogout && (
-          <button
-            onClick={onLogout}
-            title="Sign Out / Logout"
-            className={`p-2.5 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
-              isDark 
-                ? 'bg-rose-950/40 border-rose-800/60 text-rose-400 hover:bg-rose-900/60 hover:text-rose-200' 
-                : 'bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100 hover:text-rose-700'
-            }`}
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        )}
       </div>
     </div>
   );

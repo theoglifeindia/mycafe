@@ -48,7 +48,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, settings, profile }) => {
         
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center space-y-3 mb-8">
-          <div className="w-24 h-24 bg-slate-800 border border-slate-700/80 rounded-2xl p-3 flex items-center justify-center overflow-hidden shadow-xl mb-1">
+          <div className="w-full max-w-[240px] h-28 bg-slate-800/90 border border-slate-700/80 rounded-2xl p-2 flex items-center justify-center overflow-hidden shadow-xl mb-1">
             {logoUrl ? (
               <img src={logoUrl} alt="Logo" className="w-full h-full object-contain block mx-auto rounded-xl" />
             ) : (

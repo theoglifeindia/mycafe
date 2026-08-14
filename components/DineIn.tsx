@@ -29,7 +29,6 @@ const DineIn: React.FC<DineInProps> = ({
   selectedTableId: propSelectedTableId,
   onSelectTable
 }) => {
-  const [rearrangeMode, setRearrangeMode] = useState(false);
   const [internalSelectedTableId, setInternalSelectedTableId] = useState<string | null>(null);
   const selectedTableId = propSelectedTableId !== undefined ? propSelectedTableId : internalSelectedTableId;
   const setSelectedTableId = (id: string | null) => {
@@ -101,7 +100,6 @@ const DineIn: React.FC<DineInProps> = ({
   };
 
   const handleTableClick = (table: Table) => {
-    if (rearrangeMode) return;
     const existingStartTime = table.sessionStartTime || Date.now();
     setSessionStartTime(existingStartTime);
     setSelectedTableId(table.id);
@@ -134,17 +132,15 @@ const DineIn: React.FC<DineInProps> = ({
   };
 
   const handleMiscCharge = () => {
-    if (!sessionStartTime) return;
-    const durationMin = calculateDurationMins(sessionStartTime);
-    const price = durationMin * 2.5;
-    const MISC_ID = 'MISC_TIME_BASED';
+    if (!selectedTableId) return;
+    const MISC_ID = 'MISC';
     setIsDirty(true);
     setCart(prev => {
-      const existing = prev.find(i => i.id === MISC_ID);
+      const existing = prev.find(i => i.id === MISC_ID || i.name.trim().toUpperCase() === 'MISC');
       if (existing) {
-        return prev.map(i => i.id === MISC_ID ? { ...i, price: price, name: `MISC (${durationMin}m)` } : i);
+        return prev;
       }
-      return [...prev, { id: MISC_ID, name: `MISC (${durationMin}m)`, price: price, qty: 1 }];
+      return [...prev, { id: MISC_ID, name: 'MISC', price: 0, qty: 1 }];
     });
     setMiscState('success');
     setTimeout(() => setMiscState('idle'), 2000);
@@ -380,22 +376,30 @@ const DineIn: React.FC<DineInProps> = ({
     return (Number(val) || 0).toFixed(2);
   };
 
+  const isDark = settings?.theme === 'Midnight';
+
   if (selectedTableId && selectedTable) {
     const totals = calculateTotal();
     const duration = calculateDurationMins(sessionStartTime);
     
     return (
-      <div className={`flex overflow-hidden bg-gray-50 transition-all duration-300 animate-in fade-in ${
+      <div className={`flex overflow-hidden transition-all duration-300 animate-in fade-in ${
+        isDark ? 'bg-slate-950 text-slate-100' : 'bg-gray-50 text-gray-900'
+      } ${
         isFullscreen ? 'fixed inset-0 z-[500] h-screen w-screen' : 'h-[calc(100vh-180px)] w-full'
       }`}>
-        <div className="flex-1 p-6 overflow-y-auto scrollbar-hide flex flex-col min-w-0 bg-white border-r border-gray-100">
+        <div className={`flex-1 p-6 overflow-y-auto scrollbar-hide flex flex-col min-w-0 border-r transition-all ${
+          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
+        }`}>
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg shadow-sm">
-                <Layers className="w-5 h-5 text-blue-600" />
+              <div className={`p-2 rounded-lg shadow-sm ${
+                isDark ? 'bg-blue-950/60 text-blue-400' : 'bg-blue-100 text-blue-600'
+              }`}>
+                <Layers className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-800">Select Items</h2>
+                <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Select Items</h2>
                 <div className="flex items-center text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5">
                   <Clock className="w-3 h-3 mr-1" />
                   Table {selectedTable.name} • Session {duration} Min
@@ -406,21 +410,31 @@ const DineIn: React.FC<DineInProps> = ({
             <div className="flex items-center space-x-2">
               <button 
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-2 bg-gray-50 border border-gray-200 text-gray-400 rounded-xl hover:text-blue-600 transition-all shadow-sm active:scale-95"
+                className={`p-2 border rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer ${
+                  isDark 
+                    ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white' 
+                    : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-blue-600'
+                }`}
                 title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
               >
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
               <button 
                 onClick={handleExitAttempt}
-                className="px-4 py-2 bg-gray-50 border border-gray-200 text-gray-600 rounded-xl flex items-center text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all active:scale-95 shadow-sm"
+                className={`px-4 py-2 border rounded-xl flex items-center text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm cursor-pointer ${
+                  isDark 
+                    ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' 
+                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                }`}
               >
                 <ArrowLeft className="w-3.5 h-3.5 mr-2" /> Change Table
               </button>
             </div>
           </div>
 
-          <div className="mb-6 sticky top-0 bg-white/95 py-2 z-20 backdrop-blur-sm border-b border-gray-100">
+          <div className={`mb-6 sticky top-0 py-2 z-20 backdrop-blur-sm border-b transition-all ${
+            isDark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-gray-100'
+          }`}>
             <div className="flex flex-col gap-4">
               <div className="relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -429,7 +443,11 @@ const DineIn: React.FC<DineInProps> = ({
                   placeholder="Search item in catalog..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                  className={`w-full pl-10 pr-4 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all ${
+                    isDark 
+                      ? 'bg-slate-800/80 border-slate-700 text-white placeholder-slate-500' 
+                      : 'bg-gray-50 border-gray-100 text-gray-900 placeholder-gray-400'
+                  }`}
                 />
               </div>
               <div className="flex flex-wrap gap-2 py-1">
@@ -437,10 +455,12 @@ const DineIn: React.FC<DineInProps> = ({
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border whitespace-nowrap ${
+                    className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border whitespace-nowrap cursor-pointer ${
                       selectedCategory === cat 
                         ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
-                        : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 shadow-sm'
+                        : isDark 
+                          ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' 
+                          : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 shadow-sm'
                     }`}
                   >
                     {cat}
@@ -452,10 +472,16 @@ const DineIn: React.FC<DineInProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 pb-10">
             {filteredMenu.map(item => (
-              <div key={item.id} className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col justify-between hover:shadow-lg transition-all group relative overflow-hidden border-b-4 hover:border-blue-100">
+              <div key={item.id} className={`rounded-2xl p-4 flex flex-col justify-between hover:shadow-lg transition-all group relative overflow-hidden border border-b-4 ${
+                isDark 
+                  ? 'bg-slate-800/80 border-slate-700 hover:border-blue-500' 
+                  : 'bg-white border-gray-100 hover:border-blue-100'
+              }`}>
                 <div className="flex justify-between items-start mb-2">
                    <div className="flex-1 pr-2">
-                    <h4 className="text-sm font-bold text-gray-800 leading-tight group-hover:text-blue-600 transition-colors">{item.name}</h4>
+                    <h4 className={`text-sm font-bold leading-tight transition-colors ${
+                      isDark ? 'text-white group-hover:text-blue-400' : 'text-gray-800 group-hover:text-blue-600'
+                    }`}>{item.name}</h4>
                     <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 block tracking-widest">{item.category}</span>
                    </div>
                    <div className={`w-3.5 h-3.5 border-2 ${item.foodType === 'veg' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} rounded flex items-center justify-center`}>
@@ -463,10 +489,10 @@ const DineIn: React.FC<DineInProps> = ({
                    </div>
                 </div>
                 <div className="mt-4 flex items-center justify-between">
-                  <div className="text-sm font-black text-gray-900">₹{formatPrice(item.price)}</div>
+                  <div className={`text-sm font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>₹{formatPrice(item.price)}</div>
                   <button 
                     onClick={() => addToCart(item)}
-                    className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-90"
+                    className="p-2 bg-blue-600/15 text-blue-500 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-90 cursor-pointer"
                   >
                     <Plus className="w-5 h-5" />
                   </button>
@@ -476,23 +502,29 @@ const DineIn: React.FC<DineInProps> = ({
           </div>
         </div>
 
-        <div className="w-[320px] bg-gray-50 flex flex-col border-l border-gray-200 shadow-2xl relative z-30 h-full overflow-hidden flex-shrink-0">
-          <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center flex-shrink-0">
+        <div className={`w-[320px] flex flex-col border-l shadow-2xl relative z-30 h-full overflow-hidden flex-shrink-0 transition-all ${
+          isDark ? 'bg-slate-900 border-slate-800' : 'bg-gray-50 border-gray-200'
+        }`}>
+          <div className={`p-4 border-b flex justify-between items-center flex-shrink-0 transition-all ${
+            isDark ? 'bg-slate-850 border-slate-800' : 'bg-white border-gray-200'
+          }`}>
             <div className="flex items-center space-x-2.5">
-              <ReceiptText className="w-5 h-5 text-blue-600" />
+              <ReceiptText className="w-5 h-5 text-blue-500" />
               <div className="flex flex-col">
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs font-black bg-slate-900 text-white px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
+                  <span className={`text-xs font-black px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow-sm ${
+                    isDark ? 'bg-blue-600 text-white' : 'bg-slate-900 text-white'
+                  }`}>
                     {selectedTable.name}
                   </span>
-                  <h3 className="text-xs font-black text-gray-800 uppercase tracking-tight">Current Order</h3>
+                  <h3 className={`text-xs font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>Current Order</h3>
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[9px] font-black text-blue-500 uppercase flex items-center">
+                  <span className="text-[9px] font-black text-blue-400 uppercase flex items-center">
                     <Clock className="w-2.5 h-2.5 mr-1" /> {duration} Min
                   </span>
                   {selectedTable.customerName && (
-                    <span className="text-[9px] font-bold text-gray-500 truncate max-w-[100px]">
+                    <span className="text-[9px] font-bold text-gray-400 truncate max-w-[100px]">
                       • {selectedTable.customerName}
                     </span>
                   )}
@@ -509,7 +541,7 @@ const DineIn: React.FC<DineInProps> = ({
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
             {cart.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-gray-300">
+              <div className="flex flex-col items-center justify-center h-full text-gray-400">
                 <Calculator className="w-10 h-10 mb-3 opacity-20" />
                 <p className="text-[10px] font-black uppercase tracking-widest">Cart is Empty</p>
                 <p className="text-[9px] text-gray-400 mt-1">Select items to begin</p>
@@ -518,32 +550,48 @@ const DineIn: React.FC<DineInProps> = ({
               cart.map(item => {
                 const isEditable = item.name.toUpperCase().includes('MISC') || item.name.toUpperCase().includes('OTHER CHARGES');
                 return (
-                  <div key={item.id} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between animate-in slide-in-from-right-2 duration-200">
+                  <div key={item.id} className={`p-3 rounded-xl border shadow-sm flex items-center justify-between animate-in slide-in-from-right-2 duration-200 transition-all ${
+                    isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-100'
+                  }`}>
                     <div className="flex-1 mr-2">
-                      <h5 className="text-[11px] font-bold text-gray-800 line-clamp-1">{item.name}</h5>
+                      <h5 className={`text-[11px] font-bold line-clamp-1 ${isDark ? 'text-white' : 'text-gray-800'}`}>{item.name}</h5>
                       {isEditable ? (
                         <div className="flex items-center space-x-1 mt-0.5">
-                          <span className="text-[10px] font-black text-blue-600">₹</span>
+                          <span className="text-[10px] font-black text-blue-400">₹</span>
                           <input 
                             type="number"
+                            min="0"
+                            step="any"
                             value={item.price}
-                            onChange={(e) => updateCartItemPrice(item.id, parseFloat(e.target.value) || 0)}
-                            className="w-16 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 rounded px-1 py-0 focus:outline-none focus:ring-1 focus:ring-blue-200 tabular-nums"
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value);
+                              updateCartItemPrice(item.id, isNaN(val) ? 0 : Math.max(0, val));
+                            }}
+                            className={`w-16 text-[10px] font-black rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 tabular-nums border ${
+                              isDark ? 'bg-slate-900 border-slate-700 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-600'
+                            }`}
                           />
                         </div>
                       ) : (
-                        <div className="text-[10px] font-black text-blue-600 mt-0.5">₹{formatPrice(item.price)}</div>
+                        <div className="text-[10px] font-black text-blue-500 mt-0.5">₹{formatPrice(item.price)}</div>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center bg-gray-50 rounded-lg border border-gray-100 p-0.5">
-                        <button onClick={() => updateCartQty(item.id, -1)} className="p-1 hover:bg-white hover:shadow-sm rounded text-gray-400 transition-all"><Minus className="w-3 h-3" /></button>
-                        <span className="w-6 text-center text-[10px] font-black text-gray-800">{item.qty}</span>
-                        <button onClick={() => updateCartQty(item.id, 1)} className="p-1 hover:bg-white hover:shadow-sm rounded text-gray-400 transition-all"><Plus className="w-3 h-3" /></button>
+                      <div className={`flex items-center rounded-lg border p-0.5 ${
+                        isDark ? 'bg-slate-900 border-slate-700' : 'bg-gray-50 border-gray-100'
+                      }`}>
+                        <button onClick={() => updateCartQty(item.id, -1)} className={`p-1 rounded transition-all cursor-pointer ${
+                          isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white hover:shadow-sm text-gray-400'
+                        }`}><Minus className="w-3 h-3" /></button>
+                        <span className={`w-6 text-center text-[10px] font-black ${isDark ? 'text-white' : 'text-gray-800'}`}>{item.qty}</span>
+                        <button onClick={() => updateCartQty(item.id, 1)} className={`p-1 rounded transition-all cursor-pointer ${
+                          isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-white hover:shadow-sm text-gray-400'
+                        }`}><Plus className="w-3 h-3" /></button>
                       </div>
                       <button 
                         onClick={() => removeFromCart(item.id)} 
-                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        className="p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer"
                         title="Remove Item"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -555,12 +603,14 @@ const DineIn: React.FC<DineInProps> = ({
             )}
           </div>
 
-          <div className="bg-white border-t border-gray-200 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] flex-shrink-0">
+          <div className={`border-t shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] flex-shrink-0 transition-all ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
+          }`}>
             <div className="p-5 space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
                   <span>Subtotal</span>
-                  <span className="text-gray-600">₹{formatPrice(totals.subtotal)}</span>
+                  <span className={isDark ? 'text-slate-300' : 'text-gray-600'}>₹{formatPrice(totals.subtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
@@ -575,20 +625,26 @@ const DineIn: React.FC<DineInProps> = ({
                         setDiscount(Math.max(0, parseFloat(e.target.value) || 0));
                         setIsDirty(true);
                       }}
-                      className="w-16 text-right text-[11px] font-black text-red-600 bg-red-50 border border-red-100 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-red-200"
+                      className={`w-16 text-right text-[11px] font-black rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 border ${
+                        isDark 
+                          ? 'bg-slate-800 border-slate-700 text-rose-400 focus:ring-rose-500' 
+                          : 'bg-red-50 border-red-100 text-red-600 focus:ring-red-200'
+                      }`}
                     />
                   </div>
                 </div>
-                <div className="pt-2 border-t border-dashed border-gray-200 flex justify-between items-center">
-                  <span className="text-[11px] font-black text-gray-800 uppercase tracking-widest">Payable</span>
-                  <span className="text-xl font-black text-blue-600">₹{formatPrice(totals.total)}</span>
+                <div className={`pt-2 border-t border-dashed flex justify-between items-center ${
+                  isDark ? 'border-slate-800' : 'border-gray-200'
+                }`}>
+                  <span className={`text-[11px] font-black uppercase tracking-widest ${isDark ? 'text-white' : 'text-gray-800'}`}>Payable</span>
+                  <span className="text-xl font-black text-blue-500">₹{formatPrice(totals.total)}</span>
                 </div>
               </div>
               <div className="space-y-2">
                 <button 
                   onClick={() => handlePlaceOrder('pending')}
-                  className={`w-full py-3.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${
-                    punchState === 'success' ? 'bg-green-600 text-white' : 'bg-yellow-400 text-yellow-900 hover:bg-yellow-500'
+                  className={`w-full py-3.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${
+                    punchState === 'success' ? 'bg-emerald-600 text-white' : 'bg-yellow-500 text-yellow-950 hover:bg-yellow-400'
                   }`}
                 >
                   {punchState === 'success' ? <><Check className="w-4 h-4" /> Punched!</> : <><ReceiptText className="w-4 h-4" /> Punch Order</>}
@@ -596,33 +652,37 @@ const DineIn: React.FC<DineInProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   <button 
                     onClick={handlePrintClick}
-                    className={`py-3 border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-                      printState === 'success' ? 'bg-green-50 border-green-600 text-green-700' : 'bg-white text-gray-600 hover:bg-gray-50 shadow-sm'
+                    className={`py-3 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      printState === 'success' 
+                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' 
+                        : isDark 
+                          ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' 
+                          : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 shadow-sm'
                     }`}
                   >
                     <Printer className="w-3.5 h-3.5" /> Print Bill
                   </button>
                   <button 
                     onClick={handleSettleClick}
-                    className={`py-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
-                      settleState === 'success' ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'
+                    className={`py-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${
+                      settleState === 'success' ? 'bg-emerald-600' : 'bg-blue-600 hover:bg-blue-700'
                     }`}
                   >
                     <Check className="w-3.5 h-3.5" /> Settle
                   </button>
                 </div>
-                <div className="flex items-center gap-2 pt-1 border-t border-gray-50">
+                <div className={`flex items-center gap-2 pt-1 border-t ${isDark ? 'border-slate-800' : 'border-gray-100'}`}>
                    <button 
                     onClick={() => setIsClearModalOpen(true)}
-                    className="flex-1 py-1.5 text-red-500 text-[9px] font-black uppercase tracking-widest hover:bg-red-50 rounded-xl transition-all"
+                    className="flex-1 py-1.5 text-rose-500 text-[9px] font-black uppercase tracking-widest hover:bg-rose-500/10 rounded-xl transition-all cursor-pointer"
                   >
                     Clear Order
                   </button>
-                  <div className="w-px h-3 bg-gray-200"></div>
+                  <div className={`w-px h-3 ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
                   <button 
                     onClick={handleMiscCharge}
-                    className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${
-                      miscState === 'success' ? 'text-green-600 bg-green-50' : 'text-gray-400 hover:bg-gray-50'
+                    className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer ${
+                      miscState === 'success' ? 'text-emerald-500 bg-emerald-500/10' : isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-gray-400 hover:bg-gray-50'
                     }`}
                   >
                     Misc Charge
@@ -635,16 +695,24 @@ const DineIn: React.FC<DineInProps> = ({
 
         {/* Modal: Settle Payment */}
         {isSettleModalOpen && (
-          <div className="fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
-              <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
-                <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Settle Payment</h3>
-                <button onClick={() => setIsSettleModalOpen(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X className="w-5 h-5 text-gray-400" /></button>
+          <div className="fixed inset-0 bg-black/70 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className={`rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300 border transition-all ${
+              isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-100 text-gray-900'
+            }`}>
+              <div className={`p-6 border-b flex justify-between items-center ${
+                isDark ? 'bg-slate-850 border-slate-800' : 'bg-gray-50 border-gray-100'
+              }`}>
+                <h3 className={`text-lg font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>Settle Payment</h3>
+                <button onClick={() => setIsSettleModalOpen(false)} className={`p-2 rounded-full transition-colors cursor-pointer ${
+                  isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-200 text-gray-400'
+                }`}><X className="w-5 h-5" /></button>
               </div>
               <div className="p-8 space-y-8">
-                <div className="text-center p-6 bg-blue-50 rounded-2xl border border-blue-100">
-                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Payable Amount</p>
-                  <p className="text-4xl font-black text-blue-800 tracking-tighter">₹{calculateTotal().total.toFixed(2)}</p>
+                <div className={`text-center p-6 rounded-2xl border ${
+                  isDark ? 'bg-blue-950/40 border-blue-900/50' : 'bg-blue-50 border-blue-100'
+                }`}>
+                  <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-blue-400' : 'text-blue-500'}`}>Payable Amount</p>
+                  <p className={`text-4xl font-black tracking-tighter ${isDark ? 'text-blue-300' : 'text-blue-800'}`}>₹{calculateTotal().total.toFixed(2)}</p>
                 </div>
                 <div className="space-y-4">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Select Method</label>
@@ -658,7 +726,13 @@ const DineIn: React.FC<DineInProps> = ({
                       <button 
                         key={method.id}
                         onClick={() => setPaymentMode(method.id as PaymentMethod)}
-                        className={`flex items-center p-4 rounded-2xl border-2 transition-all ${paymentMode === method.id ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-white border-gray-100 text-gray-600 hover:border-blue-200'}`}
+                        className={`flex items-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                          paymentMode === method.id 
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-lg' 
+                            : isDark 
+                              ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:border-slate-600' 
+                              : 'bg-white border-gray-100 text-gray-600 hover:border-blue-200'
+                        }`}
                       >
                         <method.icon className={`w-5 h-5 mr-3 ${paymentMode === method.id ? 'text-white' : 'text-blue-500'}`} />
                         <span className="text-[10px] font-black uppercase tracking-widest">{method.label}</span>
@@ -667,7 +741,9 @@ const DineIn: React.FC<DineInProps> = ({
                   </div>
                 </div>
                 {paymentMode === 'Split' && (
-                  <div className="space-y-4 p-5 bg-gray-50 rounded-2xl border border-gray-100 animate-in slide-in-from-top-2">
+                  <div className={`space-y-4 p-5 rounded-2xl border animate-in slide-in-from-top-2 ${
+                    isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-gray-50 border-gray-100'
+                  }`}>
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cash Amount (₹)</label>
                       <input 
@@ -678,7 +754,9 @@ const DineIn: React.FC<DineInProps> = ({
                           setCashSplit(val);
                           setUpiSplit(Math.max(0, calculateTotal().total - val));
                         }}
-                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-black text-lg"
+                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-black text-lg ${
+                          isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-gray-200 text-gray-900'
+                        }`}
                       />
                     </div>
                     <div className="space-y-1">
@@ -691,7 +769,9 @@ const DineIn: React.FC<DineInProps> = ({
                           setUpiSplit(val);
                           setCashSplit(Math.max(0, calculateTotal().total - val));
                         }}
-                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-black text-lg"
+                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-black text-lg ${
+                          isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-gray-200 text-gray-900'
+                        }`}
                       />
                     </div>
                   </div>
@@ -699,8 +779,12 @@ const DineIn: React.FC<DineInProps> = ({
                 <button 
                   onClick={handleSettle}
                   disabled={settleState === 'success'}
-                  className={`w-full py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center ${
-                    settleState === 'success' ? 'bg-green-600 text-white' : 'bg-gray-900 text-white hover:bg-black'
+                  className={`w-full py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center cursor-pointer ${
+                    settleState === 'success' 
+                      ? 'bg-emerald-600 text-white' 
+                      : isDark 
+                        ? 'bg-blue-600 text-white hover:bg-blue-500' 
+                        : 'bg-gray-900 text-white hover:bg-black'
                   }`}
                 >
                   {settleState === 'success' ? <><Check className="w-5 h-5 mr-2" /> Done!</> : 'Finalize & Close Table'}
@@ -712,26 +796,32 @@ const DineIn: React.FC<DineInProps> = ({
 
         {/* Modal: Clear Order Confirmation */}
         {isClearModalOpen && (
-          <div className="fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="fixed inset-0 bg-black/70 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className={`rounded-3xl w-full max-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 border ${
+              isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-100 text-gray-900'
+            }`}>
               <div className="p-8 flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 ${
+                  isDark ? 'bg-rose-950/60 text-rose-400' : 'bg-red-100 text-red-600'
+                }`}>
                   <Trash2 className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-2">Clear Current Order?</h3>
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest leading-relaxed mb-8">
-                  This will reset table <span className="text-gray-800">{selectedTable.name}</span> to vacant and permanently delete the current draft.
+                <h3 className={`text-xl font-black uppercase tracking-tight mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Clear Current Order?</h3>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest leading-relaxed mb-8">
+                  This will reset table <span className={isDark ? 'text-white' : 'text-gray-800'}>{selectedTable.name}</span> to vacant and permanently delete the current draft.
                 </p>
                 <div className="flex w-full gap-3">
                   <button 
                     onClick={() => setIsClearModalOpen(false)}
-                    className="flex-1 py-4 border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-all"
+                    className={`flex-1 py-4 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                      isDark ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                    }`}
                   >
                     Cancel
                   </button>
                   <button 
                     onClick={handleClearOrder}
-                    className="flex-1 py-4 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg active:scale-95"
+                    className="flex-1 py-4 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg active:scale-95 cursor-pointer"
                   >
                     Clear Now
                   </button>
@@ -743,20 +833,26 @@ const DineIn: React.FC<DineInProps> = ({
 
         {/* Modal: Exit Guard */}
         {isExitGuardOpen && (
-          <div className="fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="fixed inset-0 bg-black/70 z-[600] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className={`rounded-3xl w-full max-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 border ${
+              isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-100 text-gray-900'
+            }`}>
               <div className="p-8 flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mb-6">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 ${
+                  isDark ? 'bg-amber-950/60 text-amber-400' : 'bg-yellow-100 text-yellow-600'
+                }`}>
                   <AlertTriangle className="w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-2">Unsaved Changes</h3>
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest leading-relaxed mb-8">
+                <h3 className={`text-xl font-black uppercase tracking-tight mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Unsaved Changes</h3>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest leading-relaxed mb-8">
                   You have items in the cart that haven't been punched. Switching tables will lose these changes.
                 </p>
                 <div className="flex w-full gap-3">
                   <button 
                     onClick={() => setIsExitGuardOpen(false)}
-                    className="flex-1 py-4 border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-all"
+                    className={`flex-1 py-4 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                      isDark ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                    }`}
                   >
                     Stay Here
                   </button>
@@ -773,7 +869,7 @@ const DineIn: React.FC<DineInProps> = ({
                       setCart([]);
                       setIsFullscreen(false);
                     }}
-                    className="flex-1 py-4 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg active:scale-95"
+                    className="flex-1 py-4 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg active:scale-95 cursor-pointer"
                   >
                     Exit Anyway
                   </button>
@@ -785,24 +881,30 @@ const DineIn: React.FC<DineInProps> = ({
 
         {/* Customer Information Prompt Modal */}
         {isCustModalOpen && (
-          <div className="fixed inset-0 bg-black/60 z-[650] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
-              <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
+          <div className="fixed inset-0 bg-black/70 z-[650] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className={`rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300 border ${
+              isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-100 text-gray-900'
+            }`}>
+              <div className={`p-6 border-b flex justify-between items-center ${
+                isDark ? 'bg-slate-850 border-slate-800' : 'bg-gray-50 border-gray-100'
+              }`}>
                 <div>
-                  <h3 className="text-base font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
-                    <UserCheck className="w-5 h-5 text-blue-600" /> Customer Details
+                  <h3 className={`text-base font-black uppercase tracking-tight flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    <UserCheck className="w-5 h-5 text-blue-500" /> Customer Details
                   </h3>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
                     Table {selectedTable?.name || 'Selected'}
                   </p>
                 </div>
-                <button onClick={() => saveCustomerAndProceed(true)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                  <X className="w-5 h-5 text-gray-400" />
+                <button onClick={() => saveCustomerAndProceed(true)} className={`p-2 rounded-full transition-colors cursor-pointer ${
+                  isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-200 text-gray-400'
+                }`}>
+                  <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="p-6 space-y-4">
                 {custError && (
-                  <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl flex items-center gap-2">
+                  <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold rounded-xl flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     <span>{custError}</span>
                   </div>
@@ -821,7 +923,11 @@ const DineIn: React.FC<DineInProps> = ({
                         setCustNameInput(e.target.value);
                         if (custError) setCustError('');
                       }}
-                      className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full pl-9 pr-4 py-2.5 border rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                        isDark 
+                          ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' 
+                          : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+                      }`}
                     />
                   </div>
                 </div>
@@ -842,7 +948,11 @@ const DineIn: React.FC<DineInProps> = ({
                         setCustPhoneInput(val);
                         if (custError) setCustError('');
                       }}
-                      className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full pl-9 pr-4 py-2.5 border rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                        isDark 
+                          ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' 
+                          : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+                      }`}
                     />
                   </div>
                 </div>
@@ -851,14 +961,16 @@ const DineIn: React.FC<DineInProps> = ({
                   <button
                     type="button"
                     onClick={() => saveCustomerAndProceed(true)}
-                    className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+                    className={`flex-1 py-3 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                      isDark ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
                   >
                     Skip
                   </button>
                   <button
                     type="button"
                     onClick={() => saveCustomerAndProceed(false)}
-                    className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md active:scale-95"
+                    className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md active:scale-95 cursor-pointer"
                   >
                     Save & Proceed
                   </button>
@@ -870,18 +982,24 @@ const DineIn: React.FC<DineInProps> = ({
 
         {/* Bill Receipt Preview Modal */}
         {isBillReceiptModalOpen && selectedTable && (
-          <div className="fixed inset-0 bg-black/60 z-[700] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col max-h-[90vh]">
-              <div className="p-4 border-b bg-gray-50 flex justify-between items-center flex-shrink-0">
+          <div className="fixed inset-0 bg-black/70 z-[700] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className={`rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col max-h-[90vh] border ${
+              isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-100 text-gray-900'
+            }`}>
+              <div className={`p-4 border-b flex justify-between items-center flex-shrink-0 ${
+                isDark ? 'bg-slate-850 border-slate-800' : 'bg-gray-50 border-gray-100'
+              }`}>
                 <div className="flex items-center gap-2">
-                  <Printer className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Bill Generated</h3>
+                  <Printer className="w-5 h-5 text-blue-500" />
+                  <h3 className={`text-sm font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>Bill Generated</h3>
                 </div>
                 <button 
                   onClick={() => setIsBillReceiptModalOpen(false)} 
-                  className="p-1.5 hover:bg-gray-200 rounded-full transition-colors"
+                  className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                    isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-200 text-gray-500'
+                  }`}
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
@@ -955,10 +1073,14 @@ const DineIn: React.FC<DineInProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 border-t bg-gray-50 flex gap-3 flex-shrink-0">
+              <div className={`p-4 border-t flex gap-3 flex-shrink-0 ${
+                isDark ? 'bg-slate-850 border-slate-800' : 'bg-gray-50 border-gray-100'
+              }`}>
                 <button
                   onClick={() => setIsBillReceiptModalOpen(false)}
-                  className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all"
+                  className={`flex-1 py-3 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                    isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-gray-200 text-gray-600 hover:bg-gray-100'
+                  }`}
                 >
                   Close
                 </button>
@@ -974,7 +1096,7 @@ const DineIn: React.FC<DineInProps> = ({
                       window.print();
                     }
                   }}
-                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Printer className="w-4 h-4" /> Print Receipt
                 </button>
@@ -988,29 +1110,22 @@ const DineIn: React.FC<DineInProps> = ({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex justify-between items-center bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+      <div className={`flex justify-between items-center p-8 rounded-3xl shadow-sm border transition-all ${
+        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
+      }`}>
         <div>
-          <h2 className="text-2xl font-black text-gray-800 tracking-tight">Dine In Floors</h2>
+          <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>Dine In Floors</h2>
           <div className="flex items-center mt-4 space-x-8">
             <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-gray-400">
-              <div className="w-3 h-3 bg-green-500 rounded-full mr-2.5 shadow-sm shadow-green-200"></div> Vacant
+              <div className="w-3 h-3 bg-green-500 rounded-full mr-2.5 shadow-sm shadow-green-500/30"></div> Vacant
             </div>
             <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-gray-400">
-              <div className="w-3 h-3 bg-red-500 rounded-full mr-2.5 shadow-sm shadow-red-200"></div> Occupied
+              <div className="w-3 h-3 bg-red-500 rounded-full mr-2.5 shadow-sm shadow-red-500/30"></div> Occupied
             </div>
             <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-gray-400">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2.5 shadow-sm shadow-yellow-200"></div> Billed
+              <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2.5 shadow-sm shadow-yellow-500/30"></div> Billed
             </div>
           </div>
-        </div>
-        <div className="flex items-center space-x-5 bg-gray-50 p-2.5 rounded-2xl border border-gray-100">
-          <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-3">Table Layout</span>
-          <button 
-            onClick={() => setRearrangeMode(!rearrangeMode)}
-            className={`w-14 h-7 rounded-full transition-all relative ${rearrangeMode ? 'bg-blue-600' : 'bg-gray-300'}`}
-          >
-            <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${rearrangeMode ? 'translate-x-7 shadow-md' : 'shadow-sm'}`}></div>
-          </button>
         </div>
       </div>
 
@@ -1018,11 +1133,15 @@ const DineIn: React.FC<DineInProps> = ({
         {Object.entries(tablesBySection).map(([section, sectionTables]) => (
           <div key={section} className="space-y-8">
             <div className="flex items-center space-x-5">
-              <div className="p-2.5 bg-blue-50 rounded-xl shadow-sm">
-                <Layers className="w-5 h-5 text-blue-600" />
+              <div className={`p-2.5 rounded-xl shadow-sm ${
+                isDark ? 'bg-blue-950/60 text-blue-400' : 'bg-blue-50 text-blue-600'
+              }`}>
+                <Layers className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-black text-gray-800 tracking-tight">{section}</h3>
-              <div className="h-px flex-1 bg-gradient-to-r from-gray-200 to-transparent"></div>
+              <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-gray-800'}`}>{section}</h3>
+              <div className={`h-px flex-1 bg-gradient-to-r ${
+                isDark ? 'from-slate-800 to-transparent' : 'from-gray-200 to-transparent'
+              }`}></div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
               {(sectionTables as Table[]).map(table => {
@@ -1032,42 +1151,46 @@ const DineIn: React.FC<DineInProps> = ({
                   <button
                     key={table.id}
                     onClick={() => handleTableClick(table)}
-                    className={`p-6 h-40 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-center space-y-1 shadow-sm relative group overflow-hidden ${
-                      table.status === 'vacant' ? 'bg-white border-green-50 hover:border-green-500' : 
-                      table.status === 'occupied' ? 'bg-red-50 border-red-50 hover:border-red-500' : 
-                      'bg-yellow-50 border-yellow-50 hover:border-yellow-500'
+                    className={`p-6 h-40 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-center space-y-1 shadow-sm relative group overflow-hidden cursor-pointer ${
+                      table.status === 'vacant' 
+                        ? isDark ? 'bg-slate-900 border-slate-800 hover:border-emerald-500' : 'bg-white border-green-50 hover:border-green-500' : 
+                      table.status === 'occupied' 
+                        ? isDark ? 'bg-rose-950/20 border-rose-900/40 hover:border-rose-500' : 'bg-red-50 border-red-50 hover:border-red-500' : 
+                        isDark ? 'bg-amber-950/20 border-amber-900/40 hover:border-amber-500' : 'bg-yellow-50 border-yellow-50 hover:border-yellow-500'
                     } hover:shadow-2xl hover:-translate-y-2 active:scale-95`}
                   >
                     <span className={`text-3xl font-black tracking-tighter ${
-                      table.status === 'vacant' ? 'text-gray-800' : 
-                      table.status === 'occupied' ? 'text-red-700' : 
-                      'text-yellow-700'
+                      table.status === 'vacant' ? (isDark ? 'text-white' : 'text-gray-800') : 
+                      table.status === 'occupied' ? (isDark ? 'text-rose-300' : 'text-red-700') : 
+                      (isDark ? 'text-amber-300' : 'text-yellow-700')
                     }`}>{table.name}</span>
-                    <span className={`text-[9px] uppercase font-black tracking-widest opacity-60 ${
-                      table.status === 'vacant' ? 'text-green-600' : 
-                      table.status === 'occupied' ? 'text-red-600' : 
-                      'text-yellow-600'
+                    <span className={`text-[9px] uppercase font-black tracking-widest opacity-80 ${
+                      table.status === 'vacant' ? (isDark ? 'text-emerald-400' : 'text-green-600') : 
+                      table.status === 'occupied' ? (isDark ? 'text-rose-400' : 'text-red-600') : 
+                      (isDark ? 'text-amber-400' : 'text-yellow-600')
                     }`}>{table.status}</span>
                     {table.orderValue !== undefined && table.orderValue !== null && table.orderValue > 0 && (
                       <div className="mt-2 flex flex-col items-center gap-1">
                         <div className={`px-3 py-1 rounded-2xl text-[10px] font-black ${
-                          table.status === 'occupied' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                          table.status === 'occupied' 
+                            ? isDark ? 'bg-rose-900/40 text-rose-300' : 'bg-red-100 text-red-700' 
+                            : isDark ? 'bg-amber-900/40 text-amber-300' : 'bg-yellow-100 text-yellow-700'
                         }`}>
                           ₹{formatPrice(table.orderValue)}
                         </div>
                         {hasSession && (
                           <div className={`text-[9px] font-bold uppercase tracking-widest ${
-                            table.status === 'occupied' ? 'text-red-400' : 'text-yellow-600'
+                            table.status === 'occupied' ? 'text-rose-400/80' : 'text-amber-400/80'
                           }`}>
                             {duration} Min
                           </div>
                         )}
                       </div>
                     )}
-                    <div className={`absolute top-0 right-0 w-10 h-10 rounded-bl-3xl transition-opacity opacity-10 group-hover:opacity-100 ${
-                      table.status === 'vacant' ? 'bg-green-500' : 
-                      table.status === 'occupied' ? 'bg-red-500' : 
-                      'bg-yellow-500'
+                    <div className={`absolute top-0 right-0 w-10 h-10 rounded-bl-3xl transition-opacity opacity-20 group-hover:opacity-100 ${
+                      table.status === 'vacant' ? 'bg-emerald-500' : 
+                      table.status === 'occupied' ? 'bg-rose-500' : 
+                      'bg-amber-500'
                     }`}></div>
                   </button>
                 );
@@ -1079,23 +1202,31 @@ const DineIn: React.FC<DineInProps> = ({
       {/* Customer Information Prompt Modal */}
       {isCustModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-[650] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
-            <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
+          <div className={`rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300 border ${
+            isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-100 text-gray-900'
+          }`}>
+            <div className={`p-6 border-b flex justify-between items-center ${
+              isDark ? 'bg-slate-850 border-slate-800' : 'bg-gray-50 border-gray-100'
+            }`}>
               <div>
-                <h3 className="text-base font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-blue-600" /> Customer Details
+                <h3 className={`text-base font-black uppercase tracking-tight flex items-center gap-2 ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}>
+                  <UserCheck className="w-5 h-5 text-blue-500" /> Customer Details
                 </h3>
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
                   Table {selectedTable?.name || 'Selected'}
                 </p>
               </div>
-              <button onClick={() => saveCustomerAndProceed(true)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                <X className="w-5 h-5 text-gray-400" />
+              <button onClick={() => saveCustomerAndProceed(true)} className={`p-2 rounded-full transition-colors cursor-pointer ${
+                isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-200 text-gray-400'
+              }`}>
+                <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               {custError && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-xl flex items-center gap-2">
+                <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold rounded-xl flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                   <span>{custError}</span>
                 </div>
@@ -1114,7 +1245,9 @@ const DineIn: React.FC<DineInProps> = ({
                       setCustNameInput(e.target.value);
                       if (custError) setCustError('');
                     }}
-                    className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full pl-9 pr-4 py-2.5 border rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+                    }`}
                   />
                 </div>
               </div>
@@ -1135,7 +1268,9 @@ const DineIn: React.FC<DineInProps> = ({
                       setCustPhoneInput(val);
                       if (custError) setCustError('');
                     }}
-                    className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full pl-9 pr-4 py-2.5 border rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+                    }`}
                   />
                 </div>
               </div>
@@ -1144,14 +1279,16 @@ const DineIn: React.FC<DineInProps> = ({
                 <button
                   type="button"
                   onClick={() => saveCustomerAndProceed(true)}
-                  className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+                  className={`flex-1 py-3 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                    isDark ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
                 >
                   Skip
                 </button>
                 <button
                   type="button"
                   onClick={() => saveCustomerAndProceed(false)}
-                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md active:scale-95"
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md active:scale-95 cursor-pointer"
                 >
                   Save & Proceed
                 </button>
@@ -1164,17 +1301,23 @@ const DineIn: React.FC<DineInProps> = ({
       {/* Bill Receipt Preview Modal */}
       {isBillReceiptModalOpen && selectedTable && (
         <div className="fixed inset-0 bg-black/60 z-[700] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col max-h-[90vh]">
-            <div className="p-4 border-b bg-gray-50 flex justify-between items-center flex-shrink-0">
+          <div className={`rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col max-h-[90vh] border ${
+            isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-100 text-gray-900'
+          }`}>
+            <div className={`p-4 border-b flex justify-between items-center flex-shrink-0 ${
+              isDark ? 'bg-slate-850 border-slate-800' : 'bg-gray-50 border-gray-100'
+            }`}>
               <div className="flex items-center gap-2">
-                <Printer className="w-5 h-5 text-blue-600" />
-                <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Bill Generated</h3>
+                <Printer className="w-5 h-5 text-blue-500" />
+                <h3 className={`text-sm font-black uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>Bill Generated</h3>
               </div>
               <button 
                 onClick={() => setIsBillReceiptModalOpen(false)} 
-                className="p-1.5 hover:bg-gray-200 rounded-full transition-colors"
+                className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                  isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-gray-200 text-gray-500'
+                }`}
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -1248,10 +1391,14 @@ const DineIn: React.FC<DineInProps> = ({
               </div>
             </div>
 
-            <div className="p-4 border-t bg-gray-50 flex gap-3 flex-shrink-0">
+            <div className={`p-4 border-t flex gap-3 flex-shrink-0 ${
+              isDark ? 'bg-slate-850 border-slate-800' : 'bg-gray-50 border-gray-100'
+            }`}>
               <button
                 onClick={() => setIsBillReceiptModalOpen(false)}
-                className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all"
+                className={`flex-1 py-3 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+                  isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-gray-200 text-gray-600 hover:bg-gray-100'
+                }`}
               >
                 Close
               </button>
@@ -1267,7 +1414,7 @@ const DineIn: React.FC<DineInProps> = ({
                     window.print();
                   }
                 }}
-                className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Printer className="w-4 h-4" /> Print Receipt
               </button>

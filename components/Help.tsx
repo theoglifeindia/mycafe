@@ -169,7 +169,7 @@ const Help: React.FC<HelpProps> = ({ settings, profile }) => {
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                    className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-blue-600 text-white shadow-md'
                         : isDark 
@@ -198,19 +198,23 @@ const Help: React.FC<HelpProps> = ({ settings, profile }) => {
                       key={faq.id}
                       className={`border rounded-2xl overflow-hidden transition-all ${
                         isOpen 
-                          ? isDark ? 'border-blue-500 bg-slate-800/50' : 'border-blue-200 bg-blue-50/30' 
-                          : isDark ? 'border-slate-800 bg-slate-900' : 'border-gray-100 bg-gray-50/50 hover:border-gray-200'
+                          ? isDark ? 'border-blue-500/50 bg-slate-800/60' : 'border-blue-200 bg-blue-50/30' 
+                          : isDark ? 'border-slate-800 bg-slate-850 hover:border-slate-700' : 'border-gray-100 bg-gray-50/50 hover:border-gray-200'
                       }`}
                     >
                       <button
                         onClick={() => setExpandedFaq(isOpen ? null : faq.id)}
-                        className="w-full px-5 py-4 text-left flex items-center justify-between font-bold text-sm"
+                        className={`w-full px-5 py-4 text-left flex items-center justify-between font-bold text-sm cursor-pointer ${
+                          isDark ? 'text-slate-100' : 'text-gray-800'
+                        }`}
                       >
-                        <span className={isOpen ? 'text-blue-600' : ''}>{faq.question}</span>
-                        {isOpen ? <ChevronUp className="w-4 h-4 text-blue-600 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
+                        <span className={isOpen ? (isDark ? 'text-blue-400' : 'text-blue-600') : ''}>{faq.question}</span>
+                        {isOpen ? <ChevronUp className={`w-4 h-4 flex-shrink-0 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} /> : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
                       </button>
                       {isOpen && (
-                        <div className="px-5 pb-5 pt-1 text-xs text-gray-600 leading-relaxed font-medium border-t border-gray-100/50">
+                        <div className={`px-5 pb-5 pt-1 text-xs leading-relaxed font-medium border-t ${
+                          isDark ? 'border-slate-700/60 text-slate-300' : 'border-gray-100/50 text-gray-600'
+                        }`}>
                           {faq.answer}
                         </div>
                       )}
@@ -225,27 +229,29 @@ const Help: React.FC<HelpProps> = ({ settings, profile }) => {
         {/* Right Col: Contact Form & Info */}
         <div className="space-y-6">
           {/* Quick Contact Card */}
-          <div className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100 shadow-sm'}`}>
+          <div className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-100 shadow-sm text-gray-900'}`}>
             <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl">
+              <div className={`p-2.5 rounded-2xl ${isDark ? 'bg-indigo-950/60 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
                 <MessageSquare className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-lg font-black uppercase tracking-wider">Contact Technical Support</h2>
+                <h2 className={`text-lg font-black uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>Contact Technical Support</h2>
                 <p className="text-xs text-gray-400 font-bold">Have an inquiry or bug report?</p>
               </div>
             </div>
 
             {submitted ? (
-              <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-2xl text-center space-y-3">
-                <CheckCircle className="w-10 h-10 text-emerald-600 mx-auto" />
-                <h3 className="text-sm font-black text-emerald-900 uppercase">Message Sent Successfully!</h3>
-                <p className="text-xs text-emerald-700 font-medium leading-relaxed">
+              <div className={`p-6 rounded-2xl text-center space-y-3 border ${
+                isDark ? 'bg-emerald-950/30 border-emerald-900/50 text-emerald-300' : 'bg-emerald-50 border-emerald-100 text-emerald-900'
+              }`}>
+                <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto" />
+                <h3 className="text-sm font-black uppercase">Message Sent Successfully!</h3>
+                <p className="text-xs font-medium leading-relaxed opacity-90">
                   Thank you for reaching out. Our support team will review your inquiry and get back to you shortly.
                 </p>
                 <button
                   onClick={() => setSubmitted(false)}
-                  className="mt-2 text-xs font-black uppercase tracking-wider text-emerald-800 underline hover:text-emerald-950"
+                  className="mt-2 text-xs font-black uppercase tracking-wider underline cursor-pointer hover:opacity-80"
                 >
                   Send another message
                 </button>
@@ -253,7 +259,7 @@ const Help: React.FC<HelpProps> = ({ settings, profile }) => {
             ) : (
               <form onSubmit={handleSubmitContact} className="space-y-4">
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 block mb-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">
                     Your Name
                   </label>
                   <input
@@ -262,42 +268,48 @@ const Help: React.FC<HelpProps> = ({ settings, profile }) => {
                     value={contactName}
                     onChange={(e) => setContactName(e.target.value)}
                     placeholder="Enter your name"
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3.5 py-2.5 border rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-gray-50 border-gray-200 text-gray-900'
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 block mb-1">
-                    Email Address
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">
+                    Support Email (Fixed)
                   </label>
                   <input
                     type="email"
                     required
                     readOnly
                     value="help.mycafepos@gmail.com"
-                    className="w-full px-3.5 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 outline-none cursor-not-allowed"
+                    className={`w-full px-3.5 py-2.5 border rounded-xl text-xs font-bold outline-none cursor-not-allowed ${
+                      isDark ? 'bg-slate-850 border-slate-700 text-slate-300' : 'bg-gray-100 border-gray-200 text-gray-700'
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 block mb-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">
                     Subject / Topic
                   </label>
                   <select
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3.5 py-2.5 border rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                    }`}
                   >
-                    <option value="General Support">General Support</option>
-                    <option value="Printer & Thermal Receipt Issue">Printer & Thermal Receipt Issue</option>
-                    <option value="Menu or Billing Query">Menu or Billing Query</option>
-                    <option value="Feature Request">Feature Request</option>
-                    <option value="Bug Report">Bug Report</option>
+                    <option value="General Support" className={isDark ? 'bg-slate-800' : ''}>General Support</option>
+                    <option value="Printer & Thermal Receipt Issue" className={isDark ? 'bg-slate-800' : ''}>Printer & Thermal Receipt Issue</option>
+                    <option value="Menu or Billing Query" className={isDark ? 'bg-slate-800' : ''}>Menu or Billing Query</option>
+                    <option value="Feature Request" className={isDark ? 'bg-slate-800' : ''}>Feature Request</option>
+                    <option value="Bug Report" className={isDark ? 'bg-slate-800' : ''}>Bug Report</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 block mb-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">
                     How can we help?
                   </label>
                   <textarea
@@ -306,14 +318,16 @@ const Help: React.FC<HelpProps> = ({ settings, profile }) => {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Describe your question or issue in detail..."
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className={`w-full px-3.5 py-2.5 border rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-gray-50 border-gray-200 text-gray-900'
+                    }`}
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center space-x-2 shadow-md transition-all disabled:opacity-50"
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center space-x-2 shadow-md transition-all disabled:opacity-50 cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>{submitting ? 'Sending Message...' : 'Submit Support Ticket'}</span>
@@ -323,23 +337,23 @@ const Help: React.FC<HelpProps> = ({ settings, profile }) => {
           </div>
 
           {/* System Info Box */}
-          <div className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-gray-50 border-gray-200/60'}`}>
-            <div className="flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-gray-500 mb-3">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <div className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-gray-50 border-gray-200/60 text-gray-900'}`}>
+            <div className="flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-gray-400 mb-3">
+              <ShieldCheck className="w-4 h-4 text-emerald-500" />
               <span>System & Environment</span>
             </div>
-            <div className="space-y-2 text-xs text-gray-600 font-medium">
-              <div className="flex justify-between border-b border-gray-200/50 pb-1.5">
+            <div className="space-y-2 text-xs font-medium">
+              <div className={`flex justify-between border-b pb-1.5 ${isDark ? 'border-slate-800 text-slate-300' : 'border-gray-200/50 text-gray-600'}`}>
                 <span className="text-gray-400">POS Version</span>
                 <span className="font-bold">v2.5.0 Pro</span>
               </div>
-              <div className="flex justify-between border-b border-gray-200/50 pb-1.5">
+              <div className={`flex justify-between border-b pb-1.5 ${isDark ? 'border-slate-800 text-slate-300' : 'border-gray-200/50 text-gray-600'}`}>
                 <span className="text-gray-400">Business Unit</span>
                 <span className="font-bold">{bName}</span>
               </div>
-              <div className="flex justify-between border-b border-gray-200/50 pb-1.5">
+              <div className={`flex justify-between border-b pb-1.5 ${isDark ? 'border-slate-800 text-slate-300' : 'border-gray-200/50 text-gray-600'}`}>
                 <span className="text-gray-400">Database Status</span>
-                <span className="font-bold text-emerald-600">Online & Synced</span>
+                <span className="font-bold text-emerald-500">Online & Synced</span>
               </div>
             </div>
           </div>

@@ -38,6 +38,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [dbStatus, setDbStatus] = useState<'testing' | 'connected' | 'error'>('testing');
   const [offerIndex, setOfferIndex] = useState(0);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   const handleLogin = useCallback((u: string, p: string) => {
     if (u === 'admin' && p === 'admin') {
@@ -247,7 +248,6 @@ const App: React.FC = () => {
         settings={settings} 
         profile={profile || undefined} 
         activeTableName={activeTableName}
-        onLogout={handleLogout}
       />
       
       <main className="flex-1 ml-64 p-8 relative">
@@ -343,7 +343,7 @@ const App: React.FC = () => {
               <button 
                 onClick={() => setActiveTab('profile')}
                 title="User Profile"
-                className={`p-2 rounded-xl border transition-all ${
+                className={`p-2 rounded-xl border transition-all cursor-pointer ${
                   activeTab === 'profile'
                     ? 'text-blue-600 border-blue-200 bg-blue-50' 
                     : isDark ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white' : 'bg-gray-50 border-gray-200 text-gray-500 hover:text-blue-600 hover:bg-gray-100'
@@ -353,7 +353,7 @@ const App: React.FC = () => {
               </button>
 
               <button 
-                onClick={handleLogout}
+                onClick={() => setIsLogoutConfirmOpen(true)}
                 title="Sign Out / Logout"
                 className={`p-2 rounded-xl border transition-all cursor-pointer ${
                   isDark ? 'bg-rose-950/40 border-rose-800 text-rose-400 hover:bg-rose-900/60' : 'bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100'
@@ -380,10 +380,11 @@ const App: React.FC = () => {
               onSelectTable={setSelectedTableId}
             />
           )}
-          {activeTab === 'menu' && <MenuMgmt menu={menu} onUpdate={handleMenuUpdate} />}
+          {activeTab === 'menu' && <MenuMgmt menu={menu} settings={settings} onUpdate={handleMenuUpdate} />}
           {activeTab === 'tablesetup' && (
             <TableSetup 
               tables={tables} 
+              settings={settings}
               onUpdate={handleTableSetupUpdate} 
               onDeleteTable={handleTableDelete} 
             />
@@ -402,10 +403,53 @@ const App: React.FC = () => {
               onSaveProfile={handleProfileSave}
             />
           )}
-          {activeTab === 'profile' && profile && <Profile profile={profile} onSave={handleProfileSave} />}
+          {activeTab === 'profile' && profile && <Profile profile={profile} settings={settings} onSave={handleProfileSave} />}
           {activeTab === 'help' && <Help settings={settings} profile={profile} />}
         </div>
       </main>
+
+      {/* Logout Confirmation Modal */}
+      {isLogoutConfirmOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className={`rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-6 border text-center animate-in zoom-in duration-200 ${
+            isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-100 text-gray-900'
+          }`}>
+            <div className="w-14 h-14 bg-rose-500/10 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <LogOut className="w-7 h-7" />
+            </div>
+            
+            <h3 className={`text-lg font-black uppercase tracking-tight mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Sign Out from POS?
+            </h3>
+            
+            <p className={`text-xs font-medium leading-relaxed mb-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+              Are you sure you want to end your current session and return to the login screen?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsLogoutConfirmOpen(false)}
+                className={`flex-1 py-3 border rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogoutConfirmOpen(false);
+                  handleLogout();
+                }}
+                className="flex-1 py-3 bg-rose-600 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-rose-700 shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                Yes, Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

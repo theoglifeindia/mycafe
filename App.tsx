@@ -16,7 +16,7 @@ import { db } from './services/db.ts';
 import { MenuItem, Table, Order, BusinessProfile, AppSettings, ExpenseItem, Vendor } from './types.ts';
 import { INITIAL_SETTINGS } from './constants.tsx';
 import { BillWiseLogo } from './components/BillWiseLogo.tsx';
-import { Clock, Calendar, Bell, User as UserIcon, CheckCircle2, AlertTriangle, PieChart as PieChartIcon, Loader2, Tag, Sparkles, LogOut } from 'lucide-react';
+import { Clock, Calendar, Bell, User as UserIcon, CheckCircle2, AlertTriangle, PieChart as PieChartIcon, Loader2, Tag, Sparkles, LogOut, Menu } from 'lucide-react';
 
 const OFFERS = [
   "🎉 Happy Hour Special: 20% OFF on all Coffee & Beverages from 4 PM to 7 PM!",
@@ -43,6 +43,8 @@ const App: React.FC = () => {
   const [dbStatus, setDbStatus] = useState<'testing' | 'connected' | 'error'>('testing');
   const [offerIndex, setOfferIndex] = useState(0);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const handleLogin = useCallback((u: string, p: string) => {
     if (u === 'admin' && p === 'admin') {
@@ -134,7 +136,23 @@ const App: React.FC = () => {
   useEffect(() => {
     const bName = settings.businessName || settings.invoiceHeader || 'Rock Bottom';
     document.title = `${bName} POS`;
-  }, [settings.businessName, settings.invoiceHeader]);
+
+    // Dynamically synchronize document element and body classes with active theme
+    const isDarkTheme = settings.theme === 'Midnight';
+    if (isDarkTheme) {
+      document.documentElement.classList.add('dark');
+      document.body.className = 'bg-slate-950 text-slate-100 transition-colors duration-300';
+    } else if (settings.theme === 'Eco-Green') {
+      document.documentElement.classList.remove('dark');
+      document.body.className = 'bg-emerald-50 text-gray-900 transition-colors duration-300';
+    } else if (settings.theme === 'Modern Minimalist') {
+      document.documentElement.classList.remove('dark');
+      document.body.className = 'bg-white text-gray-900 transition-colors duration-300';
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.className = 'bg-gray-50 text-gray-900 transition-colors duration-300';
+    }
+  }, [settings.businessName, settings.invoiceHeader, settings.theme]);
 
   const handleOrderComplete = useCallback(async (order: Order, tableId: string) => {
     try {
@@ -210,16 +228,21 @@ const App: React.FC = () => {
   }, []);
 
   if (loading) {
+    const isDarkInitial = settings.theme === 'Midnight';
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-gray-50">
+      <div className={`min-h-screen w-full flex items-center justify-center ${
+        isDarkInitial ? 'bg-slate-950 text-slate-100' : 'bg-gray-50 text-gray-900'
+      }`}>
         <div className="flex flex-col items-center">
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-blue-100 rounded-full"></div>
+            <div className={`w-16 h-16 border-4 rounded-full ${isDarkInitial ? 'border-slate-800' : 'border-blue-100'}`}></div>
             <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
           </div>
           <div className="mt-8 text-center">
-            <h2 className="text-xl font-black text-gray-800 tracking-tighter uppercase">{settings.businessName || 'Rock Bottom'} POS</h2>
-            <p className="text-sm text-gray-400 font-bold animate-pulse mt-1">Establishing Secure Cloud Link...</p>
+            <h2 className={`text-xl font-black tracking-tighter uppercase ${isDarkInitial ? 'text-white' : 'text-gray-800'}`}>
+              {settings.businessName || 'Rock Bottom'} POS
+            </h2>
+            <p className="text-sm text-blue-500 font-bold animate-pulse mt-1">Establishing Secure Cloud Link...</p>
           </div>
         </div>
       </div>
@@ -248,48 +271,68 @@ const App: React.FC = () => {
   const activeTableName = currentSelectedTable ? currentSelectedTable.name : undefined;
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-300 ${getThemeClass()}`}>
+    <div className={`min-h-screen flex transition-colors duration-300 w-full overflow-x-hidden ${getThemeClass()}`}>
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         settings={settings} 
         profile={profile || undefined} 
         activeTableName={activeTableName}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
       />
       
-      <main className="flex-1 ml-64 p-8 relative flex flex-col min-h-screen">
-        <header className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 mb-8">
-          {/* 1. Big BillWise POS System Brand with Client Context */}
-          <div className={`flex items-center space-x-4 p-3.5 px-5 rounded-2xl border transition-all ${
-            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100 shadow-sm'
-          }`}>
-            <BillWiseLogo size="lg" variant={isDark ? 'light' : 'dark'} />
-            
-            <div className="hidden sm:block h-9 w-px bg-gray-200 dark:bg-slate-800" />
-            
-            <div className="text-left hidden sm:block">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Client:</span>
-                <span className="text-xs font-black text-amber-600 dark:text-amber-400">{bName}</span>
-              </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <div className={`inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider ${
-                  dbStatus === 'connected'
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-rose-600 dark:text-rose-400'
-                }`}>
-                  <span className="relative flex h-2 w-2">
-                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                      dbStatus === 'connected' ? 'bg-emerald-400' : 'bg-rose-400'
-                    }`} />
-                    <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                      dbStatus === 'connected' ? 'bg-emerald-500' : 'bg-rose-500'
-                    }`} />
-                  </span>
-                  <span>{dbStatus === 'connected' ? 'Cloud Live' : 'Offline'}</span>
+      <main className={`flex-1 transition-all duration-300 ml-0 ${
+        isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      } p-3 sm:p-5 lg:p-8 relative flex flex-col min-h-screen min-w-0 w-full overflow-x-hidden`}>
+        <header className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
+          {/* 1. Mobile Menu Toggle & BillWise POS System Brand with Client Context */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Hamburger Button for Mobile screens */}
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className={`lg:hidden p-3 rounded-2xl border transition-all cursor-pointer flex-shrink-0 flex items-center justify-center ${
+                isDark ? 'bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-800' : 'bg-white border-gray-100 shadow-sm text-gray-800 hover:bg-gray-50'
+              }`}
+              title="Open Navigation Menu"
+              aria-label="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5 text-blue-500" />
+            </button>
+
+            <div className={`flex-1 sm:flex-initial flex items-center space-x-3 sm:space-x-4 p-2.5 sm:p-3.5 px-3.5 sm:px-5 rounded-2xl border transition-all ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100 shadow-sm'
+            }`}>
+              <BillWiseLogo size="lg" variant={isDark ? 'light' : 'dark'} />
+              
+              <div className="hidden sm:block h-9 w-px bg-gray-200 dark:bg-slate-800" />
+              
+              <div className="text-left hidden sm:block">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Client:</span>
+                  <span className="text-xs font-black text-amber-600 dark:text-amber-400">{bName}</span>
                 </div>
-                <span className="text-gray-300 dark:text-slate-700">•</span>
-                <span className="text-[10px] font-bold text-gray-400">Terminal #01</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <div className={`inline-flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-wider ${
+                    dbStatus === 'connected'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-rose-600 dark:text-rose-400'
+                  }`}>
+                    <span className="relative flex h-2 w-2">
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                        dbStatus === 'connected' ? 'bg-emerald-400' : 'bg-rose-400'
+                      }`} />
+                      <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                        dbStatus === 'connected' ? 'bg-emerald-500' : 'bg-rose-500'
+                      }`} />
+                    </span>
+                    <span>{dbStatus === 'connected' ? 'Cloud Live' : 'Offline'}</span>
+                  </div>
+                  <span className="text-gray-300 dark:text-slate-700">•</span>
+                  <span className="text-[10px] font-bold text-gray-400">Terminal #01</span>
+                </div>
               </div>
             </div>
           </div>

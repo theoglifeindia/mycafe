@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Order, AppSettings, BusinessProfile, Customer } from '../types.ts';
+import { Order, AppSettings, BusinessProfile, Customer, ExpenseItem } from '../types.ts';
 
 interface GenerateReportPdfParams {
   orders: Order[];
@@ -327,3 +327,188 @@ export const generateCustomerReportPdf = ({
   const filename = `${cleanBusiness}_CustomerReport_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(filename);
 };
+
+interface GenerateProfitLossPdfParams {
+  expenses: ExpenseItem[];
+  orders: Order[];
+  settings: AppSettings;
+  profile: BusinessProfile;
+  startDate: string;
+  endDate: string;
+}
+
+export const generateProfitLossPdf = ({
+  expenses,
+  orders,
+  settings,
+  profile,
+  startDate,
+  endDate,
+}: GenerateProfitLossPdfParams) => {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const bName = (settings.businessName || profile?.ownerName || settings.invoiceHeader || 'Chai Hub').toUpperCase();
+  const address = profile?.address || 'Nagpur, Maharashtra';
+  const phone = profile?.ownerNumber || '';
+  const fssai = profile?.fssai ? `FSSAI: ${profile.fssai}` : '';
+
+  // Financial Calculations
+  const grossSales = orders.reduce((sum, o) => sum + o.total, 0);
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const netProfit = grossSales - totalExpenses;
+  const marginPercent = grossSales > 0 ? ((netProfit / grossSales) * 100).toFixed(1) : '0';
+  const paidExpenses = expenses.filter(e => e.paymentStatus === 'Paid').reduce((sum, e) => sum + e.amount, 0);
+  const pendingDues = expenses.filter(e => e.paymentStatus === 'Pending').reduce((sum, e) => sum + e.amount, 0);
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // 1. HEADER SECTION
+  doc.setFillColor(30, 41, 59); // Slate 800
+  doc.rect(0, 0, pageWidth, 32, 'F');
+
+  // Business Name
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text(bName, 14, 14);
+
+  // Business Subtitle / Details
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(203, 213, 225);
+  const subText = [address, phone, fssai].filter(Boolean).join('  |  ');
+  doc.text(subText, 14, 20);
+
+  // Report Label on Top Right
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(96, 165, 250);
+  doc.text('DAILY PROFIT & LOSS (P&L) STATEMENT', pageWidth - 14, 13, { align: 'right' });
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(255, 255, 255);
+  const formattedStart = new Date(startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const formattedEnd = new Date(endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  doc.text(`Period: ${formattedStart} - ${formattedEnd}`, pageWidth - 14, 19, { align: 'right' });
+  doc.text(`Generated: ${new Date().toLocaleString('en-IN')}`, pageWidth - 14, 25, { align: 'right' });
+
+  // 2. FINANCIAL SUMMARY CARDS
+  const startY = 38;
+  const cardWidth = (pageWidth - 28 - 9) / 4;
+  const cardHeight = 18;
+
+  const metricsData = [
+    { label: 'GROSS SALES (REVENUE)', val: `INR ${grossSales.toFixed(2)}`, color: [37, 99, 235] },
+    { label: 'TOTAL EXPENSES', val: `INR ${totalExpenses.toFixed(2)}`, color: [225, 29, 72] },
+    { 
+      label: 'NET OPERATING PROFIT', 
+      val: `INR ${netProfit.toFixed(2)} (${marginPercent}%)`, 
+      color: netProfit >= 0 ? [16, 185, 129] : [225, 29, 72] 
+    },
+    { label: 'PENDING VENDOR DUES', val: `INR ${pendingDues.toFixed(2)}`, color: [217, 119, 6] },
+  ];
+
+  metricsData.forEach((m, i) => {
+    const x = 14 + i * (cardWidth + 3);
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(x, startY, cardWidth, cardHeight, 2, 2, 'FD');
+
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(100, 116, 139);
+    doc.text(m.label, x + 3, startY + 5.5);
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(m.color[0], m.color[1], m.color[2]);
+    doc.text(m.val, x + 3, startY + 12.5);
+  });
+
+  // Table of Expenses
+  const tableData = expenses.map((e, idx) => [
+    `#${idx + 1}`,
+    e.date,
+    e.title,
+    e.category,
+    e.vendorName,
+    e.paymentMethod,
+    e.paymentStatus,
+    `INR ${e.amount.toFixed(2)}`
+  ]);
+
+  autoTable(doc, {
+    startY: startY + cardHeight + 6,
+    head: [['SR', 'DATE', 'PURCHASE / EXPENSE ITEM', 'CATEGORY', 'VENDOR / SUPPLIER', 'MODE', 'STATUS', 'AMOUNT']],
+    body: tableData.length > 0 ? tableData : [['-', '-', 'No kitchen expenses recorded in this period', '-', '-', '-', '-', '-']],
+    theme: 'striped',
+    headStyles: {
+      fillColor: [30, 41, 59],
+      textColor: [255, 255, 255],
+      fontSize: 7.5,
+      fontStyle: 'bold',
+      halign: 'left',
+    },
+    bodyStyles: {
+      fontSize: 7.5,
+      textColor: [30, 41, 59],
+      cellPadding: 2.2,
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+    columnStyles: {
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 22 },
+      2: { cellWidth: 42, fontStyle: 'bold' },
+      3: { cellWidth: 30 },
+      4: { cellWidth: 32 },
+      5: { cellWidth: 18 },
+      6: { cellWidth: 16, halign: 'center' },
+      7: { cellWidth: 24, halign: 'right', fontStyle: 'bold' },
+    },
+    margin: { left: 14, right: 14, bottom: 22 },
+    didDrawPage: (data) => {
+      const pageCount = doc.getNumberOfPages();
+      const currPage = data.pageNumber;
+
+      // Bottom separator rule
+      doc.setDrawColor(226, 232, 240);
+      doc.line(14, pageHeight - 16, pageWidth - 14, pageHeight - 16);
+
+      // BillWise Company Branding (Left)
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(30, 41, 59);
+      doc.text('BiLLWiSE', 14, pageHeight - 10.5);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text('•  Enterprise Restaurant Point of Sale System', 32, pageHeight - 10.5);
+
+      // Client attribution (Center)
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(217, 119, 6);
+      doc.text(`Client License: ${bName}`, pageWidth / 2, pageHeight - 10.5, { align: 'center' });
+
+      // Page numbers (Right)
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`Page ${currPage} of ${pageCount}`, pageWidth - 14, pageHeight - 10.5, { align: 'right' });
+    }
+  });
+
+  const cleanBusiness = bName.replace(/[^a-zA-Z0-9]/g, '_');
+  const filename = `${cleanBusiness}_ProfitLossReport_${startDate}_to_${endDate}.pdf`;
+  doc.save(filename);
+};
+

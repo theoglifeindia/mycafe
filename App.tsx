@@ -9,10 +9,11 @@ import TableSetup from './components/TableSetup.tsx';
 import Settings from './components/Settings.tsx';
 import OrderHistory from './components/OrderHistory.tsx';
 import Reports from './components/Reports.tsx';
+import { Expenses } from './components/Expenses.tsx';
 import Help from './components/Help.tsx';
 import Login from './components/Login.tsx';
 import { db } from './services/db.ts';
-import { MenuItem, Table, Order, BusinessProfile, AppSettings } from './types.ts';
+import { MenuItem, Table, Order, BusinessProfile, AppSettings, ExpenseItem, Vendor } from './types.ts';
 import { INITIAL_SETTINGS } from './constants.tsx';
 import { BillWiseLogo } from './components/BillWiseLogo.tsx';
 import { Clock, Calendar, Bell, User as UserIcon, CheckCircle2, AlertTriangle, PieChart as PieChartIcon, Loader2, Tag, Sparkles, LogOut } from 'lucide-react';
@@ -33,6 +34,8 @@ const App: React.FC = () => {
   const [tables, setTables] = useState<Table[]>([]);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [settings, setSettings] = useState<AppSettings>(INITIAL_SETTINGS);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -108,10 +111,9 @@ const App: React.FC = () => {
     const unsubMenu = db.subscribeToMenu((data) => setMenu(data));
     const unsubOrders = db.subscribeToOrders((data) => setOrders(data));
     const unsubSettings = db.subscribeToSettings((data) => setSettings(data));
-
-    db.getProfile().then(p => {
-      if (p) setProfile(p);
-    });
+    const unsubProfile = db.subscribeToProfile((data) => setProfile(data));
+    const unsubExpenses = db.subscribeToExpenses((data) => setExpenses(data));
+    const unsubVendors = db.subscribeToVendors((data) => setVendors(data));
 
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
 
@@ -120,9 +122,13 @@ const App: React.FC = () => {
       unsubMenu();
       unsubOrders();
       unsubSettings();
+      unsubProfile();
+      unsubExpenses();
+      unsubVendors();
       clearInterval(timer);
       clearTimeout(safetyTimer);
     };
+
   }, []);
 
   useEffect(() => {
@@ -403,9 +409,19 @@ const App: React.FC = () => {
           {activeTab === 'history' && profile && (
             <OrderHistory orders={orders} settings={settings} profile={profile} />
           )}
+          {activeTab === 'expenses' && profile && (
+            <Expenses 
+              orders={orders} 
+              expenses={expenses} 
+              vendors={vendors} 
+              settings={settings} 
+              profile={profile} 
+            />
+          )}
           {activeTab === 'reports' && profile && (
             <Reports orders={orders} settings={settings} profile={profile} />
           )}
+
           {activeTab === 'settings' && profile && (
             <Settings 
               settings={settings} 

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, UtensilsCrossed, BookOpen, Settings2, History, PieChart, Store, User, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, BookOpen, Settings2, History, PieChart, Store, User, HelpCircle, Coins } from 'lucide-react';
 import { AppSettings, BusinessProfile } from '../types.ts';
 
 interface SidebarProps {
@@ -17,11 +17,13 @@ const navItems = [
   { id: 'menu', label: 'Menu Items', icon: BookOpen },
   { id: 'tablesetup', label: 'Table Setup', icon: Store },
   { id: 'history', label: 'Order History', icon: History },
+  { id: 'expenses', label: 'Expenses & P&L', icon: Coins },
   { id: 'reports', label: 'Reports', icon: PieChart },
   { id: 'settings', label: 'Settings', icon: Settings2 },
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'help', label: 'Help', icon: HelpCircle },
 ];
+
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, settings, profile, activeTableName }) => {
   const isDark = settings.theme === 'Midnight';

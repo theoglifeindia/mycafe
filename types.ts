@@ -89,3 +89,45 @@ export interface Customer {
   lastVisit: string;
   createdAt: string;
 }
+
+export type ExpenseCategory = 
+  | 'Dairy & Milk'
+  | 'Produce & Sabzi'
+  | 'Gas & Cylinders'
+  | 'Tea & Groceries'
+  | 'Packaging & Cups'
+  | 'Maintenance & Cleaning'
+  | 'Utilities & Bills'
+  | 'Staff & Wages'
+  | 'Miscellaneous';
+
+export interface ExpenseItem {
+  id: string;
+  date: string; // YYYY-MM-DD
+  category: ExpenseCategory | string;
+  title: string;
+  vendorName: string;
+  vendorPhone?: string;
+  amount: number;
+  paymentMethod: 'Cash' | 'UPI' | 'Bank Transfer' | 'Due / Credit';
+  paymentStatus: 'Paid' | 'Pending';
+  quantity?: string;
+  unitPrice?: number;
+  notes?: string;
+  receiptUrl?: string;
+  createdAt: number;
+}
+
+export interface Vendor {
+  id: string;
+  name: string;
+  category: string;
+  phone: string;
+  address?: string;
+  gstin?: string;
+  notes?: string;
+  totalPurchases?: number;
+  pendingBalance?: number;
+  createdAt: string;
+}
+

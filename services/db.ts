@@ -14,8 +14,8 @@ import {
   Timestamp,
   deleteField
 } from 'firebase/firestore';
-import { MenuItem, Table, Order, BusinessProfile, AppSettings, Customer } from '../types.ts';
-import { INITIAL_MENU, INITIAL_TABLES, INITIAL_PROFILE, INITIAL_SETTINGS } from '../constants.tsx';
+import { MenuItem, Table, Order, BusinessProfile, AppSettings, Customer, ExpenseItem, Vendor } from '../types.ts';
+import { INITIAL_MENU, INITIAL_TABLES, INITIAL_PROFILE, INITIAL_SETTINGS, INITIAL_VENDORS, INITIAL_EXPENSES } from '../constants.tsx';
 import { compressImageDataUrl } from './imageCompressor.ts';
 
 /**
@@ -150,6 +150,17 @@ class FirestoreService {
     return INITIAL_PROFILE;
   }
 
+  subscribeToProfile(callback: (profile: BusinessProfile) => void) {
+    return onSnapshot(doc(firestore, 'config', 'business_profile'), (docSnap) => {
+      if (docSnap.exists()) {
+        callback(docSnap.data() as BusinessProfile);
+      } else {
+        this.updateProfile(INITIAL_PROFILE);
+        callback(INITIAL_PROFILE);
+      }
+    }, (err) => console.error("Profile Subscription Error:", err));
+  }
+
   async updateProfile(profile: BusinessProfile) {
     const cleaned = cleanData(profile);
     if (cleaned.logoUrl && typeof cleaned.logoUrl === 'string' && cleaned.logoUrl.startsWith('data:image')) {
@@ -216,6 +227,140 @@ class FirestoreService {
 
     return updatedCustomer;
   }
+
+  // --- Expenses Management ---
+  getStoredExpenses(): ExpenseItem[] {
+    try {
+      const data = localStorage.getItem('pos_app_expenses');
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.error("Failed to load expenses from localStorage:", e);
+    }
+    return INITIAL_EXPENSES;
+  }
+
+  subscribeToExpenses(callback: (expenses: ExpenseItem[]) => void) {
+    try {
+      const q = query(collection(firestore, 'expenses'), orderBy('createdAt', 'desc'));
+      return onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as ExpenseItem));
+        if (items.length === 0) {
+          const stored = this.getStoredExpenses();
+          callback(stored);
+        } else {
+          try {
+            localStorage.setItem('pos_app_expenses', JSON.stringify(items));
+          } catch (err) {}
+          callback(items);
+        }
+      }, (err) => {
+        console.error("Expenses Subscription Error (Falling back to local):", err);
+        callback(this.getStoredExpenses());
+      });
+    } catch (e) {
+      callback(this.getStoredExpenses());
+      return () => {};
+    }
+  }
+
+  async addExpense(expense: ExpenseItem) {
+    const current = this.getStoredExpenses();
+    const updated = [expense, ...current.filter(e => e.id !== expense.id)];
+    try {
+      localStorage.setItem('pos_app_expenses', JSON.stringify(updated));
+      await setDoc(doc(firestore, 'expenses', expense.id), cleanData(expense));
+    } catch (e) {
+      console.error("Failed to add expense:", e);
+    }
+  }
+
+  async updateExpense(id: string, updates: Partial<ExpenseItem>) {
+    const current = this.getStoredExpenses();
+    const updated = current.map(e => e.id === id ? { ...e, ...updates } : e);
+    try {
+      localStorage.setItem('pos_app_expenses', JSON.stringify(updated));
+      await setDoc(doc(firestore, 'expenses', id), cleanData(updates), { merge: true });
+    } catch (e) {
+      console.error("Failed to update expense:", e);
+    }
+  }
+
+  async deleteExpense(id: string) {
+    const current = this.getStoredExpenses();
+    const updated = current.filter(e => e.id !== id);
+    try {
+      localStorage.setItem('pos_app_expenses', JSON.stringify(updated));
+      await deleteDoc(doc(firestore, 'expenses', id));
+    } catch (e) {
+      console.error("Failed to delete expense:", e);
+    }
+  }
+
+  // --- Vendors Management ---
+  getStoredVendors(): Vendor[] {
+    try {
+      const data = localStorage.getItem('pos_app_vendors');
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.error("Failed to load vendors from localStorage:", e);
+    }
+    return INITIAL_VENDORS;
+  }
+
+  subscribeToVendors(callback: (vendors: Vendor[]) => void) {
+    try {
+      const q = query(collection(firestore, 'vendors'), orderBy('name'));
+      return onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as Vendor));
+        if (items.length === 0) {
+          const stored = this.getStoredVendors();
+          callback(stored);
+        } else {
+          try {
+            localStorage.setItem('pos_app_vendors', JSON.stringify(items));
+          } catch (err) {}
+          callback(items);
+        }
+      }, (err) => {
+        console.error("Vendors Subscription Error (Falling back to local):", err);
+        callback(this.getStoredVendors());
+      });
+    } catch (e) {
+      callback(this.getStoredVendors());
+      return () => {};
+    }
+  }
+
+  async saveVendor(vendor: Vendor) {
+    const current = this.getStoredVendors();
+    const existingIndex = current.findIndex(v => v.id === vendor.id);
+    let updated: Vendor[];
+    if (existingIndex >= 0) {
+      updated = [...current];
+      updated[existingIndex] = vendor;
+    } else {
+      updated = [vendor, ...current];
+    }
+
+    try {
+      localStorage.setItem('pos_app_vendors', JSON.stringify(updated));
+      await setDoc(doc(firestore, 'vendors', vendor.id), cleanData(vendor));
+    } catch (e) {
+      console.error("Failed to save vendor:", e);
+    }
+  }
+
+  async deleteVendor(id: string) {
+    const current = this.getStoredVendors();
+    const updated = current.filter(v => v.id !== id);
+    try {
+      localStorage.setItem('pos_app_vendors', JSON.stringify(updated));
+      await deleteDoc(doc(firestore, 'vendors', id));
+    } catch (e) {
+      console.error("Failed to delete vendor:", e);
+    }
+  }
 }
 
 export const db = new FirestoreService();
+
